@@ -1,7 +1,24 @@
 
 library(tidyverse)
 library(data.table)
+library(lubridate)
 options(scipen = 999)
+
+# Theme set -------------------------------------
+# rstudioapi::addTheme("https://raw.githubusercontent.com/batpigandme/night-owlish/master/rstheme/night-owlish.rstheme", apply = TRUE)
+# 
+# install.packages(
+#   "rsthemes",
+#   repos = c(gadenbuie = 'https://gadenbuie.r-universe.dev', getOption("repos"))
+# )
+# 
+# rsthemes::install_rsthemes()
+# 
+# rsthemes::list_rsthemes()
+# 
+# rstudioapi::applyTheme("Elm dark {rsthemes}")
+
+# ------------------------
 
 
 # Import data ------------------------------------------------
@@ -18,16 +35,6 @@ setDT(dataCohorteManaged)
 
 sum(is.na(dataCohorteManaged) ) / 
   ( dim(dataCohorteManaged)[1] * dim(dataCohorteManaged)[2] ) # 0.3324094 data missing
-
-library(naniar)
-
-vis_miss(dataCohorteManaged)
-
-gg_miss_upset(dataCohorteManaged)
-
-
-
-
 
 
 
@@ -71,7 +78,7 @@ graph %>%
 
 
 
-# Mortality penetrance --------------------------------------------------
+# Mortality overall  --------------------------------------------------
 
 dim(dataCohorteManaged[DC == 1, .(NUM)][, .(NUM = unique(NUM))])[1] # 459 out of 732
 
@@ -241,6 +248,138 @@ dataCohorteManaged[, DIAGNIV := ifelse(is.na(DIAGNIV), 1, DIAGNIV)]
 ClinicalTrialPats <- fread("Source/ClinicalTrialPats.txt")
 ClinicalTrialPats <- data.table(ClinicalTrialPats)[dataCohorteManaged, on = "NUM", nomatch = 0]
 
+# -----------------------
+# Age ----------------------------
+
+dataCohorteManaged <- dataCohorteManaged %>% mutate(AGE_VISITE0=ifelse(is.na(AGE_VISITE0), 
+                                                                       time_length(difftime(DATECONSULT, DATENAIS), "years") , AGE_VISITE0 ))
+
+sum(is.na(dataCohorteManaged$AGE_VISITE0)) == FALSE
+                                                    
+
+ClinicalTrialPats <- ClinicalTrialPats %>% mutate(AGE_VISITE0=ifelse(is.na(AGE_VISITE0), 
+                                                                       time_length(difftime(DATECONSULT, DATENAIS), "years") , AGE_VISITE0 ))
+
+sum(is.na(ClinicalTrialPats$AGE_VISITE0)) == FALSE
+
+
+# Overall
+mean(dataCohorteManaged$AGE_VISITE0, na.rm=T) ; sd(dataCohorteManaged$AGE_VISITE0, na.rm=T) # 65.04 , 8.14
+median(dataCohorteManaged$AGE_VISITE0, na.rm=T) ; quantile(dataCohorteManaged$AGE_VISITE0, na.rm=T) # 63, 59-71
+sum(!is.na(dataCohorteManaged$AGE_VISITE0)) ; sum(!is.na(dataCohorteManaged$AGE_VISITE0))/732 # 732, 98
+#P
+mean(dataCohorteManaged$AGE_VISITE0[dataCohorteManaged$DIAG==1], na.rm=T) ; sd(dataCohorteManaged$AGE_VISITE0[dataCohorteManaged$DIAG==1], na.rm=T) # 65.56 , 8.24
+median(dataCohorteManaged$AGE_VISITE0[dataCohorteManaged$DIAG==1], na.rm=T) ; quantile(dataCohorteManaged$AGE_VISITE0[dataCohorteManaged$DIAG==1], na.rm=T) # 66, 60-71
+#C
+mean(dataCohorteManaged$AGE_VISITE0[dataCohorteManaged$DIAG==2], na.rm=T) ; sd(dataCohorteManaged$AGE_VISITE0[dataCohorteManaged$DIAG==2], na.rm=T) # 63.92 , 7.82
+median(dataCohorteManaged$AGE_VISITE0[dataCohorteManaged$DIAG==2], na.rm=T) ; quantile(dataCohorteManaged$AGE_VISITE0[dataCohorteManaged$DIAG==2], na.rm=T) # 63, 58-70
+
+wilcox.test(
+  na.omit(dataCohorteManaged$AGE_VISITE0[dataCohorteManaged$DIAG==1]), 
+  na.omit(dataCohorteManaged$AGE_VISITE0[dataCohorteManaged$DIAG==2])
+  )
+
+
+# Overall CT
+mean(ClinicalTrialPats$AGE_VISITE0, na.rm=T) ; sd(ClinicalTrialPats$AGE_VISITE0, na.rm=T) # 63.90 , 7.77
+median(ClinicalTrialPats$AGE_VISITE0, na.rm=T) ; quantile(ClinicalTrialPats$AGE_VISITE0, na.rm=T) # 64, 59-70
+sum(!is.na(ClinicalTrialPats$AGE_VISITE0)) ; sum(!is.na(ClinicalTrialPats$AGE_VISITE0))/338 # 100
+#P
+mean(ClinicalTrialPats$AGE_VISITE0[ClinicalTrialPats$DIAG==1], na.rm=T) ; sd(ClinicalTrialPats$AGE_VISITE0[ClinicalTrialPats$DIAG==1], na.rm=T) # 64.39 , 7.98
+median(ClinicalTrialPats$AGE_VISITE0[ClinicalTrialPats$DIAG==1], na.rm=T) ; quantile(ClinicalTrialPats$AGE_VISITE0[ClinicalTrialPats$DIAG==1], na.rm=T) # 65, 59-70
+#C
+mean(ClinicalTrialPats$AGE_VISITE0[ClinicalTrialPats$DIAG==2], na.rm=T) ; sd(ClinicalTrialPats$AGE_VISITE0[ClinicalTrialPats$DIAG==2], na.rm=T) # 62.86 , 7.24
+median(ClinicalTrialPats$AGE_VISITE0[ClinicalTrialPats$DIAG==2], na.rm=T) ; quantile(ClinicalTrialPats$AGE_VISITE0[ClinicalTrialPats$DIAG==2], na.rm=T) # 63, 57-68
+
+wilcox.test(
+  na.omit(ClinicalTrialPats$AGE_VISITE0[ClinicalTrialPats$DIAG==1]), 
+  na.omit(ClinicalTrialPats$AGE_VISITE0[ClinicalTrialPats$DIAG==2])
+)
+
+
+# -----------------------
+# Gender ----------------------------
+
+names(dataCohorteManaged)
+
+
+
+# Overall
+dataCohorteManaged[, .(n_gender = .N), by = SEXE] # M 350 F 382
+#P
+dataCohorteManaged[DIAG==1, .(n_gender = .N), by = SEXE] # M 229 F 269
+#C
+dataCohorteManaged[DIAG==2, .(n_gender = .N), by = SEXE] # M 121 F 113
+
+M <- as.table(rbind(c(229, 269), c(121, 113)))
+
+dimnames(M) <- list(gender = c("MSAP", "MSAC"),
+                    party = c("M","F"))
+
+
+chisq.test(M,  simulate.p.value =T)
+
+sum(is.na(ClinicalTrialPats$SEXE))
+
+# Overall CT
+ClinicalTrialPats[, .(n_gender = .N), by = SEXE] # M 186 F 152
+#P
+ClinicalTrialPats[DIAG==1, .(n_gender = .N), by = SEXE] # M 123 F 108
+#C
+ClinicalTrialPats[DIAG==2, .(n_gender = .N), by = SEXE] # M 63 F 44
+
+M <- as.table(rbind(c(123, 108), c(63, 44)))
+
+dimnames(M) <- list(gender = c("MSAP", "MSAC"),
+                    party = c("M","F"))
+
+
+chisq.test(M,  simulate.p.value =T)
+
+# -----------------------
+# Mortality ----------------------------
+
+names(dataCohorteManaged)
+
+sum(is.na(dataCohorteManaged$DC))
+
+
+# Overall
+dataCohorteManaged[, .(n_dead = .N), by = DC] # Y 369 N 363
+#P
+dataCohorteManaged[DIAG==1, .(n_dead = .N), by = DC] # Y 272 N 226
+#C
+dataCohorteManaged[DIAG==2, .(n_dead = .N), by = DC] # Y 97 N 137
+
+M <- as.table(rbind(c(272, 226), c(97, 137)))
+
+dimnames(M) <- list(gender = c("MSAP", "MSAC"),
+                    party = c("Y","N"))
+
+
+chisq.test(M,  simulate.p.value =T)
+
+
+
+
+# Overall CT
+ClinicalTrialPats[, .(n_dead = .N), by = DC] # Y 132 N 206
+#P
+ClinicalTrialPats[DIAG==1, .(n_dead = .N), by = DC] # Y 99 N 132
+#C
+ClinicalTrialPats[DIAG==2, .(n_dead = .N), by = DC] # Y 33 N 74
+
+M <- as.table(rbind(c(99, 132), c(33, 74)))
+
+dimnames(M) <- list(gender = c("MSAP", "MSAC"),
+                    party = c("Y","N"))
+
+
+chisq.test(M,  simulate.p.value =T)
+
+
+
+# -----------------------
 # UMSARS 1 ---------------------------------------------------
 
 # Overall
@@ -254,8 +393,11 @@ median(dataCohorteManaged$UMSARS1_TOT[dataCohorteManaged$DIAG==1], na.rm=T) ; qu
 mean(dataCohorteManaged$UMSARS1_TOT[dataCohorteManaged$DIAG==2], na.rm=T) ; sd(dataCohorteManaged$UMSARS1_TOT[dataCohorteManaged$DIAG==2], na.rm=T) # 20.48 , 7.49
 median(dataCohorteManaged$UMSARS1_TOT[dataCohorteManaged$DIAG==2], na.rm=T) ; quantile(dataCohorteManaged$UMSARS1_TOT[dataCohorteManaged$DIAG==2], na.rm=T) # 19, 16-25
 
-wilcox.test(dataCohorteManaged$UMSARS1_TOT[dataCohorteManaged$DIAG==1], 
-            dataCohorteManaged$UMSARS1_TOT[dataCohorteManaged$DIAG==2])
+wilcox.test(
+  na.omit(dataCohorteManaged$UMSARS1_TOT[dataCohorteManaged$DIAG==1]), 
+  na.omit(dataCohorteManaged$UMSARS1_TOT[dataCohorteManaged$DIAG==2])
+)
+
 
 # Overall CT
 mean(ClinicalTrialPats$UMSARS1_TOT, na.rm=T) ; sd(ClinicalTrialPats$UMSARS1_TOT, na.rm=T) # 16.42 , 4.63
@@ -274,6 +416,7 @@ wilcox.test(
 )
 
 
+# -----------------------
 # UMSARS 2  ---------------------------------------------------
 
 # Overall
@@ -307,6 +450,7 @@ wilcox.test(
        )
 
 
+# -----------------------
 # UMSARS 1+2  ---------------------------------------------------
 
 # Overall
@@ -343,4 +487,285 @@ wilcox.test(
 )
 
 
-# ---------------------------------------------
+# -----------------------
+# UMSARS 1 exc. 11 ------------------
+
+dataCohorteManaged$UMSARS1_exc11 <- dataCohorteManaged$UMSARS1_TOT -  dataCohorteManaged$UMSARS1_11
+ClinicalTrialPats$UMSARS1_exc11 <- ClinicalTrialPats$UMSARS1_TOT -  ClinicalTrialPats$UMSARS1_11
+
+
+# Overall
+mean(dataCohorteManaged$UMSARS1_exc11, na.rm=T) ; sd(dataCohorteManaged$UMSARS1_exc11, na.rm=T) # 18.37 , 7.23
+median(dataCohorteManaged$UMSARS1_exc11, na.rm=T) ; quantile(dataCohorteManaged$UMSARS1_exc11, na.rm=T) # 17, 13-23
+sum(!is.na(dataCohorteManaged$UMSARS1_exc11)) ; sum(!is.na(dataCohorteManaged$UMSARS1_exc11))/732 # 703, 96
+#P
+mean(dataCohorteManaged$UMSARS1_exc11[dataCohorteManaged$DIAG==1], na.rm=T) ; sd(dataCohorteManaged$UMSARS1_exc11[dataCohorteManaged$DIAG==1], na.rm=T) # 18.89 , 7.29
+median(dataCohorteManaged$UMSARS1_exc11[dataCohorteManaged$DIAG==1], na.rm=T) ; quantile(dataCohorteManaged$UMSARS1_exc11[dataCohorteManaged$DIAG==1], na.rm=T) # 18, 14-23
+#C
+mean(dataCohorteManaged$UMSARS1_exc11[dataCohorteManaged$DIAG==2], na.rm=T) ; sd(dataCohorteManaged$UMSARS1_exc11[dataCohorteManaged$DIAG==2], na.rm=T) # 17.24 , 7.00
+median(dataCohorteManaged$UMSARS1_exc11[dataCohorteManaged$DIAG==2], na.rm=T) ; quantile(dataCohorteManaged$UMSARS1_exc11[dataCohorteManaged$DIAG==2], na.rm=T) # 16, 13-21
+
+wilcox.test(dataCohorteManaged$UMSARS1_exc11[dataCohorteManaged$DIAG==1], 
+            dataCohorteManaged$UMSARS1_exc11[dataCohorteManaged$DIAG==2])
+
+# Overall CT
+mean(ClinicalTrialPats$UMSARS1_exc11, na.rm=T) ; sd(ClinicalTrialPats$UMSARS1_exc11, na.rm=T) # 13.34 , 4.04
+median(ClinicalTrialPats$UMSARS1_exc11, na.rm=T) ; quantile(ClinicalTrialPats$UMSARS1_exc11, na.rm=T) # 14, 11-16
+sum(!is.na(ClinicalTrialPats$UMSARS1_exc11)) ; sum(!is.na(ClinicalTrialPats$UMSARS1_exc11))/338 # 338 100
+#P
+mean(ClinicalTrialPats$UMSARS1_exc11[ClinicalTrialPats$DIAG==1], na.rm=T) ; sd(ClinicalTrialPats$UMSARS1_exc11[ClinicalTrialPats$DIAG==1], na.rm=T) # 13.74 , 4.07
+median(ClinicalTrialPats$UMSARS1_exc11[ClinicalTrialPats$DIAG==1], na.rm=T) ; quantile(ClinicalTrialPats$UMSARS1_exc11[ClinicalTrialPats$DIAG==1], na.rm=T) # 14, 12-17
+#C
+mean(ClinicalTrialPats$UMSARS1_exc11[ClinicalTrialPats$DIAG==2], na.rm=T) ; sd(ClinicalTrialPats$UMSARS1_exc11[ClinicalTrialPats$DIAG==2], na.rm=T) # 12.48 , 3.85
+median(ClinicalTrialPats$UMSARS1_exc11[ClinicalTrialPats$DIAG==2], na.rm=T) ; quantile(ClinicalTrialPats$UMSARS1_exc11[ClinicalTrialPats$DIAG==2], na.rm=T) # 13, 11-15
+
+wilcox.test(
+  na.omit(ClinicalTrialPats$UMSARS1_exc11[ClinicalTrialPats$DIAG==1]), 
+  na.omit(ClinicalTrialPats$UMSARS1_exc11[ClinicalTrialPats$DIAG==2])
+)
+
+# -----------------------
+# UMSARS 1 exc. 11 TAK 341 collapsed  ------------------
+
+dataCohorteManaged <- dataCohorteManaged %>% left_join(
+  dataCohorteManaged %>% select(NUM, DIAG, UMSARS1_1:UMSARS1_12, UMSARS1_TOT) %>%
+  mutate(UMSARS1_1=UMSARS1_1-1) %>% mutate(UMSARS1_1=ifelse(UMSARS1_1<0,0, UMSARS1_1)) %>%
+  mutate(UMSARS1_2=UMSARS1_2-1) %>% mutate(UMSARS1_2=ifelse(UMSARS1_2<0,0, UMSARS1_2)) %>%
+  mutate(UMSARS1_3=UMSARS1_3-1) %>% mutate(UMSARS1_3=ifelse(UMSARS1_3<0,0, UMSARS1_3)) %>%
+  mutate(UMSARS1_4=UMSARS1_4-1) %>% mutate(UMSARS1_4=ifelse(UMSARS1_4<0,0, UMSARS1_4)) %>%
+  mutate(UMSARS1_5=UMSARS1_5-1) %>% mutate(UMSARS1_5=ifelse(UMSARS1_5<0,0, UMSARS1_5)) %>%
+  mutate(UMSARS1_6=UMSARS1_6-1) %>% mutate(UMSARS1_6=ifelse(UMSARS1_6<0,0, UMSARS1_6)) %>%
+  mutate(UMSARS1_7=UMSARS1_7-1) %>% mutate(UMSARS1_7=ifelse(UMSARS1_7<0,0, UMSARS1_7)) %>%
+  mutate(UMSARS1_8=UMSARS1_8-1) %>% mutate(UMSARS1_8=ifelse(UMSARS1_8<0,0, UMSARS1_8)) %>%
+  mutate(UMSARS1_9=UMSARS1_9-1) %>% mutate(UMSARS1_9=ifelse(UMSARS1_9<0,0, UMSARS1_9)) %>%
+  mutate(UMSARS1_10=UMSARS1_10-1) %>% mutate(UMSARS1_10=ifelse(UMSARS1_10<0,0, UMSARS1_10)) %>%
+  mutate(UMSARS1_11=UMSARS1_11-1) %>% mutate(UMSARS1_11=ifelse(UMSARS1_11<0,0, UMSARS1_11)) %>%
+  mutate(UMSARS1_12=UMSARS1_12-1) %>% mutate(UMSARS1_12=ifelse(UMSARS1_12<0,0, UMSARS1_12)) %>%
+  mutate(UMSARS1_TOT_collapsed=UMSARS1_1+UMSARS1_2+UMSARS1_3+UMSARS1_4+UMSARS1_5+UMSARS1_6+UMSARS1_7+UMSARS1_8+UMSARS1_9+UMSARS1_10+UMSARS1_12) %>%
+  select(NUM, UMSARS1_TOT_collapsed)
+  )
+
+
+ClinicalTrialPats <- ClinicalTrialPats %>% left_join(
+  ClinicalTrialPats %>% select(NUM, DIAG, UMSARS1_1:UMSARS1_12, UMSARS1_TOT) %>%
+    mutate(UMSARS1_1=UMSARS1_1-1) %>% mutate(UMSARS1_1=ifelse(UMSARS1_1<0,0, UMSARS1_1)) %>%
+    mutate(UMSARS1_2=UMSARS1_2-1) %>% mutate(UMSARS1_2=ifelse(UMSARS1_2<0,0, UMSARS1_2)) %>%
+    mutate(UMSARS1_3=UMSARS1_3-1) %>% mutate(UMSARS1_3=ifelse(UMSARS1_3<0,0, UMSARS1_3)) %>%
+    mutate(UMSARS1_4=UMSARS1_4-1) %>% mutate(UMSARS1_4=ifelse(UMSARS1_4<0,0, UMSARS1_4)) %>%
+    mutate(UMSARS1_5=UMSARS1_5-1) %>% mutate(UMSARS1_5=ifelse(UMSARS1_5<0,0, UMSARS1_5)) %>%
+    mutate(UMSARS1_6=UMSARS1_6-1) %>% mutate(UMSARS1_6=ifelse(UMSARS1_6<0,0, UMSARS1_6)) %>%
+    mutate(UMSARS1_7=UMSARS1_7-1) %>% mutate(UMSARS1_7=ifelse(UMSARS1_7<0,0, UMSARS1_7)) %>%
+    mutate(UMSARS1_8=UMSARS1_8-1) %>% mutate(UMSARS1_8=ifelse(UMSARS1_8<0,0, UMSARS1_8)) %>%
+    mutate(UMSARS1_9=UMSARS1_9-1) %>% mutate(UMSARS1_9=ifelse(UMSARS1_9<0,0, UMSARS1_9)) %>%
+    mutate(UMSARS1_10=UMSARS1_10-1) %>% mutate(UMSARS1_10=ifelse(UMSARS1_10<0,0, UMSARS1_10)) %>%
+    mutate(UMSARS1_11=UMSARS1_11-1) %>% mutate(UMSARS1_11=ifelse(UMSARS1_11<0,0, UMSARS1_11)) %>%
+    mutate(UMSARS1_12=UMSARS1_12-1) %>% mutate(UMSARS1_12=ifelse(UMSARS1_12<0,0, UMSARS1_12)) %>%
+    mutate(UMSARS1_TOT_collapsed=UMSARS1_1+UMSARS1_2+UMSARS1_3+UMSARS1_4+UMSARS1_5+UMSARS1_6+UMSARS1_7+UMSARS1_8+UMSARS1_9+UMSARS1_10+UMSARS1_12) %>%
+    select(NUM, UMSARS1_TOT_collapsed)
+)
+
+
+
+# Overall
+mean(dataCohorteManaged$UMSARS1_TOT_collapsed, na.rm=T) ; sd(dataCohorteManaged$UMSARS1_TOT_collapsed, na.rm=T) # 8.75 , 6.27
+median(dataCohorteManaged$UMSARS1_TOT_collapsed, na.rm=T) ; quantile(dataCohorteManaged$UMSARS1_TOT_collapsed, na.rm=T) # 7, 4-12
+sum(!is.na(dataCohorteManaged$UMSARS1_TOT_collapsed)) ; sum(!is.na(dataCohorteManaged$UMSARS1_TOT_collapsed))/732 # 704, 96
+#P
+mean(dataCohorteManaged$UMSARS1_TOT_collapsed[dataCohorteManaged$DIAG==1], na.rm=T) ; sd(dataCohorteManaged$UMSARS1_TOT_collapsed[dataCohorteManaged$DIAG==1], na.rm=T) # 9.24 , 6.34
+median(dataCohorteManaged$UMSARS1_TOT_collapsed[dataCohorteManaged$DIAG==1], na.rm=T) ; quantile(dataCohorteManaged$UMSARS1_TOT_collapsed[dataCohorteManaged$DIAG==1], na.rm=T) # 8, 4-13
+#C
+mean(dataCohorteManaged$UMSARS1_TOT_collapsed[dataCohorteManaged$DIAG==2], na.rm=T) ; sd(dataCohorteManaged$UMSARS1_TOT_collapsed[dataCohorteManaged$DIAG==2], na.rm=T) # 7.70 , 6.00
+median(dataCohorteManaged$UMSARS1_TOT_collapsed[dataCohorteManaged$DIAG==2], na.rm=T) ; quantile(dataCohorteManaged$UMSARS1_TOT_collapsed[dataCohorteManaged$DIAG==2], na.rm=T) # 6, 3-11
+
+wilcox.test(dataCohorteManaged$UMSARS1_TOT_collapsed[dataCohorteManaged$DIAG==1], 
+            dataCohorteManaged$UMSARS1_TOT_collapsed[dataCohorteManaged$DIAG==2])
+
+# Overall CT
+mean(ClinicalTrialPats$UMSARS1_TOT_collapsed, na.rm=T) ; sd(ClinicalTrialPats$UMSARS1_TOT_collapsed, na.rm=T) # 4.39 , 2.68
+median(ClinicalTrialPats$UMSARS1_TOT_collapsed, na.rm=T) ; quantile(ClinicalTrialPats$UMSARS1_TOT_collapsed, na.rm=T) # 4, 2-6
+sum(!is.na(ClinicalTrialPats$UMSARS1_TOT_collapsed)) ; sum(!is.na(ClinicalTrialPats$UMSARS1_TOT_collapsed))/338 # 338 100
+#P
+mean(ClinicalTrialPats$UMSARS1_TOT_collapsed[ClinicalTrialPats$DIAG==1], na.rm=T) ; sd(ClinicalTrialPats$UMSARS1_TOT_collapsed[ClinicalTrialPats$DIAG==1], na.rm=T) # 4.69 , 2.72
+median(ClinicalTrialPats$UMSARS1_TOT_collapsed[ClinicalTrialPats$DIAG==1], na.rm=T) ; quantile(ClinicalTrialPats$UMSARS1_TOT_collapsed[ClinicalTrialPats$DIAG==1], na.rm=T) # 5, 3-6
+#C
+mean(ClinicalTrialPats$UMSARS1_TOT_collapsed[ClinicalTrialPats$DIAG==2], na.rm=T) ; sd(ClinicalTrialPats$UMSARS1_TOT_collapsed[ClinicalTrialPats$DIAG==2], na.rm=T) # 3.72 , 2.47
+median(ClinicalTrialPats$UMSARS1_TOT_collapsed[ClinicalTrialPats$DIAG==2], na.rm=T) ; quantile(ClinicalTrialPats$UMSARS1_TOT_collapsed[ClinicalTrialPats$DIAG==2], na.rm=T) # 3, 2-5
+
+wilcox.test(
+  na.omit(ClinicalTrialPats$UMSARS1_TOT_collapsed[ClinicalTrialPats$DIAG==1]), 
+  na.omit(ClinicalTrialPats$UMSARS1_TOT_collapsed[ClinicalTrialPats$DIAG==2])
+)
+
+# -----------------------
+# COMPASS ----------------------------
+
+# Overall
+mean(dataCohorteManaged$COMPASS_TOT, na.rm=T) ; sd(dataCohorteManaged$COMPASS_TOT, na.rm=T) # 22.22 , 13.40
+median(dataCohorteManaged$COMPASS_TOT, na.rm=T) ; quantile(dataCohorteManaged$COMPASS_TOT, na.rm=T) # 22, 14-31
+sum(!is.na(dataCohorteManaged$COMPASS_TOT)) ; sum(!is.na(dataCohorteManaged$COMPASS_TOT))/732 # 118, 16%
+#P
+mean(dataCohorteManaged$COMPASS_TOT[dataCohorteManaged$DIAG==1], na.rm=T) ; sd(dataCohorteManaged$COMPASS_TOT[dataCohorteManaged$DIAG==1], na.rm=T) # 25.04 , 13.24
+median(dataCohorteManaged$COMPASS_TOT[dataCohorteManaged$DIAG==1], na.rm=T) ; quantile(dataCohorteManaged$COMPASS_TOT[dataCohorteManaged$DIAG==1], na.rm=T) # 25, 17-34
+#C
+mean(dataCohorteManaged$COMPASS_TOT[dataCohorteManaged$DIAG==2], na.rm=T) ; sd(dataCohorteManaged$COMPASS_TOT[dataCohorteManaged$DIAG==2], na.rm=T) # 17.96 , 12.60
+median(dataCohorteManaged$COMPASS_TOT[dataCohorteManaged$DIAG==2], na.rm=T) ; quantile(dataCohorteManaged$COMPASS_TOT[dataCohorteManaged$DIAG==2], na.rm=T) # 21, 6-27
+
+wilcox.test(
+  na.omit(dataCohorteManaged$COMPASS_TOT[dataCohorteManaged$DIAG==1]), 
+  na.omit(dataCohorteManaged$COMPASS_TOT[dataCohorteManaged$DIAG==2])
+)
+
+
+# Overall CT
+mean(ClinicalTrialPats$COMPASS_TOT, na.rm=T) ; sd(ClinicalTrialPats$COMPASS_TOT, na.rm=T) # 19.36 , 12.31
+median(ClinicalTrialPats$COMPASS_TOT, na.rm=T) ; quantile(ClinicalTrialPats$COMPASS_TOT, na.rm=T) # 19, 11-27
+sum(!is.na(ClinicalTrialPats$COMPASS_TOT)) ; sum(!is.na(ClinicalTrialPats$COMPASS_TOT))/338 # 64 19%
+#P
+mean(ClinicalTrialPats$COMPASS_TOT[ClinicalTrialPats$DIAG==1], na.rm=T) ; sd(ClinicalTrialPats$COMPASS_TOT[ClinicalTrialPats$DIAG==1], na.rm=T) # 22.49 , 11.54
+median(ClinicalTrialPats$COMPASS_TOT[ClinicalTrialPats$DIAG==1], na.rm=T) ; quantile(ClinicalTrialPats$COMPASS_TOT[ClinicalTrialPats$DIAG==1], na.rm=T) # 22, 16-30
+#C
+mean(ClinicalTrialPats$COMPASS_TOT[ClinicalTrialPats$DIAG==2], na.rm=T) ; sd(ClinicalTrialPats$COMPASS_TOT[ClinicalTrialPats$DIAG==2], na.rm=T) # 14.48 , 12.09
+median(ClinicalTrialPats$COMPASS_TOT[ClinicalTrialPats$DIAG==2], na.rm=T) ; quantile(ClinicalTrialPats$COMPASS_TOT[ClinicalTrialPats$DIAG==2], na.rm=T) # 13, 4-26
+
+wilcox.test(
+  na.omit(ClinicalTrialPats$COMPASS_TOT[ClinicalTrialPats$DIAG==1]), 
+  na.omit(ClinicalTrialPats$COMPASS_TOT[ClinicalTrialPats$DIAG==2])
+)
+
+# -----------------------
+# QoL ----------------------------
+
+# Overall
+mean(dataCohorteManaged$ECHANQV, na.rm=T) ; sd(dataCohorteManaged$ECHANQV, na.rm=T) # 42.90 , 21.00
+median(dataCohorteManaged$ECHANQV, na.rm=T) ; quantile(dataCohorteManaged$ECHANQV, na.rm=T) # 40, 30-55
+sum(!is.na(dataCohorteManaged$ECHANQV)) ; sum(!is.na(dataCohorteManaged$ECHANQV))/732 # 406, 5%
+#P
+mean(dataCohorteManaged$ECHANQV[dataCohorteManaged$DIAG==1], na.rm=T) ; sd(dataCohorteManaged$ECHANQV[dataCohorteManaged$DIAG==1], na.rm=T) # 41.99 , 20.52
+median(dataCohorteManaged$ECHANQV[dataCohorteManaged$DIAG==1], na.rm=T) ; quantile(dataCohorteManaged$ECHANQV[dataCohorteManaged$DIAG==1], na.rm=T) # 40, 30-55
+#C
+mean(dataCohorteManaged$ECHANQV[dataCohorteManaged$DIAG==2], na.rm=T) ; sd(dataCohorteManaged$ECHANQV[dataCohorteManaged$DIAG==2], na.rm=T) # 44.64 , 21.86
+median(dataCohorteManaged$ECHANQV[dataCohorteManaged$DIAG==2], na.rm=T) ; quantile(dataCohorteManaged$ECHANQV[dataCohorteManaged$DIAG==2], na.rm=T) # 50, 30-55
+
+wilcox.test(
+  na.omit(dataCohorteManaged$ECHANQV[dataCohorteManaged$DIAG==1]), 
+  na.omit(dataCohorteManaged$ECHANQV[dataCohorteManaged$DIAG==2])
+)
+
+
+# Overall CT
+mean(ClinicalTrialPats$ECHANQV, na.rm=T) ; sd(ClinicalTrialPats$ECHANQV, na.rm=T) # 46.65 , 20.52
+median(ClinicalTrialPats$ECHANQV, na.rm=T) ; quantile(ClinicalTrialPats$ECHANQV, na.rm=T) # 50, 30-60
+sum(!is.na(ClinicalTrialPats$ECHANQV)) ; sum(!is.na(ClinicalTrialPats$ECHANQV))/338 # 204 60%
+#P
+mean(ClinicalTrialPats$ECHANQV[ClinicalTrialPats$DIAG==1], na.rm=T) ; sd(ClinicalTrialPats$ECHANQV[ClinicalTrialPats$DIAG==1], na.rm=T) # 45.05 , 19.59
+median(ClinicalTrialPats$ECHANQV[ClinicalTrialPats$DIAG==1], na.rm=T) ; quantile(ClinicalTrialPats$ECHANQV[ClinicalTrialPats$DIAG==1], na.rm=T) # 48, 30-60
+#C
+mean(ClinicalTrialPats$ECHANQV[ClinicalTrialPats$DIAG==2], na.rm=T) ; sd(ClinicalTrialPats$ECHANQV[ClinicalTrialPats$DIAG==2], na.rm=T) # 49.34 , 21.87
+median(ClinicalTrialPats$ECHANQV[ClinicalTrialPats$DIAG==2], na.rm=T) ; quantile(ClinicalTrialPats$ECHANQV[ClinicalTrialPats$DIAG==2], na.rm=T) # 50, 40-66
+
+wilcox.test(
+  na.omit(ClinicalTrialPats$ECHANQV[ClinicalTrialPats$DIAG==1]), 
+  na.omit(ClinicalTrialPats$ECHANQV[ClinicalTrialPats$DIAG==2])
+)
+
+# -----------------------
+# UPDRS 3 -------------------------------------
+
+dataCohorteManaged <- dataCohorteManaged %>% 
+  left_join(
+    dataCohorteManaged %>% select(NUM, DIAG, deltaPAD, deltaPAS, PAS_COU, PAD_COU) %>% 
+      mutate(SupHyper=ifelse(PAS_COU>140|PAD_COU>90, 1 , 0)) %>%
+      mutate(OrthoHypo=ifelse( abs(deltaPAS) < 20 | abs(deltaPAD) < 10, 1 , 0)) %>%
+      select(NUM, SupHyper, OrthoHypo)
+    )
+
+ClinicalTrialPats <- ClinicalTrialPats %>% 
+  left_join(
+    ClinicalTrialPats %>% select(NUM, DIAG, deltaPAD, deltaPAS, PAS_COU, PAD_COU) %>% 
+      mutate(SupHyper=ifelse(PAS_COU>140|PAD_COU>90, 1 , 0)) %>%
+      mutate(OrthoHypo=ifelse( abs(deltaPAS) < 20 | abs(deltaPAD) < 10, 1 , 0)) %>%
+      select(NUM, SupHyper, OrthoHypo)
+  )
+
+# SupHyper
+
+sum(!is.na(dataCohorteManaged$SupHyper)) # 664 91%
+
+
+# Overall
+dataCohorteManaged[, .(n_dead = .N), by = SupHyper] # Y 308 N 356
+#P
+dataCohorteManaged[DIAG==1, .(n_dead = .N), by = SupHyper] # Y 195 N 261
+#C
+dataCohorteManaged[DIAG==2, .(n_dead = .N), by = SupHyper] # Y 113 N 95
+
+M <- as.table(rbind(c(195, 261), c(113, 95)))
+
+dimnames(M) <- list(gender = c("MSAP", "MSAC"),
+                    party = c("Y","N"))
+
+
+chisq.test(M,  simulate.p.value =T)
+
+
+sum(!is.na(ClinicalTrialPats$SupHyper)) # 321 95%
+
+
+# Overall CT
+ClinicalTrialPats[, .(n_dead = .N), by = SupHyper] # Y 149 N 172
+#P
+ClinicalTrialPats[DIAG==1, .(n_dead = .N), by = SupHyper] # Y 98 N 121
+#C
+ClinicalTrialPats[DIAG==2, .(n_dead = .N), by = SupHyper] # Y 51 N 51
+
+M <- as.table(rbind(c(98, 121), c(51, 51)))
+
+dimnames(M) <- list(gender = c("MSAP", "MSAC"),
+                    party = c("Y","N"))
+
+
+chisq.test(M,  simulate.p.value =T)
+
+
+
+# OrthoHypo
+
+sum(!is.na(dataCohorteManaged$OrthoHypo)) # 661 90%
+
+
+# Overall
+dataCohorteManaged[, .(n_dead = .N), by = OrthoHypo] # Y 275 N 386
+#P
+dataCohorteManaged[DIAG==1, .(n_dead = .N), by = OrthoHypo] # Y 188 N 266
+#C
+dataCohorteManaged[DIAG==2, .(n_dead = .N), by = OrthoHypo] # Y 87 N 120
+
+M <- as.table(rbind(c(188, 266), c(87, 120)))
+
+dimnames(M) <- list(gender = c("MSAP", "MSAC"),
+                    party = c("Y","N"))
+
+
+chisq.test(M,  simulate.p.value =T)
+
+
+sum(!is.na(ClinicalTrialPats$OrthoHypo)) # 320 95%
+
+
+# Overall CT
+ClinicalTrialPats[, .(n_dead = .N), by = OrthoHypo] # Y 151 N 169
+#P
+ClinicalTrialPats[DIAG==1, .(n_dead = .N), by = OrthoHypo] # Y 102 N 116
+#C
+ClinicalTrialPats[DIAG==2, .(n_dead = .N), by = OrthoHypo] # Y 49 N 53
+
+M <- as.table(rbind(c(102, 116), c(49, 53)))
+
+dimnames(M) <- list(gender = c("MSAP", "MSAC"),
+                    party = c("Y","N"))
+
+
+chisq.test(M,  simulate.p.value =T)
+
+
+# ----------------------------
