@@ -2,6 +2,10 @@
 library(tidyverse)
 library(data.table)
 library(lubridate)
+library(nlme)
+library(JM)
+library(survival)
+
 options(scipen = 999)
 
 # Theme set -------------------------------------
@@ -62,9 +66,9 @@ graph <- dataCohorteManaged[, .(n = .N), by = NUM]
 
 setnames(graph, "n", "n_visits")
 
-graph <- graph[, .(n = .N), by = n_visits]
+graph_sum <- graph[, .(n = .N), by = n_visits]
 
-graph %>%
+graph_sum %>%
   ggplot(aes(n_visits, n)) +
   geom_col(fill="#355C7D", alpha=0.8) + 
   theme_minimal() + 
@@ -133,7 +137,23 @@ temp %>% select(NUM) %>% distinct() %>% mutate(rownum=row_number()) %>%
   theme(axis.text.y = element_text(size = 0.2))  +
   geom_vline(xintercept = c(6,12,18,24),  color = "firebrick", size=1.5, alpha=0.5) +
   xlab("\n Number of elapsed months \n between subsequent evaluations") + ylab("Patient ID \n") 
-  
+ 
+
+
+graph %>% inner_join(
+  temp  %>% group_by(NUM) %>% summarise(First=min(as.Date(DATECONSULT)), 
+                                        Last=max(as.Date(DATECONSULT)))  %>%
+    mutate(elapsed=as.numeric(Last-First)/30.5) %>% ungroup() %>%
+    select(NUM, elapsed)
+) %>%
+  ggplot(aes(n_visits, elapsed)) +
+  geom_density2d_filled() +
+  theme_minimal() 
+
+
+
+
+
 # ----------------------------------------------------------------
 # Populations ---------------------------------
 
@@ -235,6 +255,107 @@ data.table(ClinicalTrialPats)[dataCohorteManaged, on = "NUM", nomatch = 0][, .(c
 # 4:    2       1    33
 
 # ---------------------------------------
+# Summary evolution UMSARS all datapoints ---------------------------
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+setDT(dataCohorteManaged)
+dataCohorteManaged[, DIAGNIV := ifelse(is.na(DIAGNIV), 1, DIAGNIV)]
+names(dataCohorteManaged)
+
+ClinicalTrialPats <- fread("Source/ClinicalTrialPats.txt")
+ClinicalTrialPats <- data.table(ClinicalTrialPats)[dataCohorteManaged, on = "NUM", nomatch = 0]
+
+max(dataCohorteManaged$UMSARS1_TOT, na.rm=T) # 46
+
+# GAM with a cubic spline (with “shrinkage”)  and 3 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
+  filter(TIME_SYMPT<=15) %>%
+  ggplot(aes(TIME_SYMPT, UMSARS1_TOT)) +
+  geom_jitter(size=0.1, fill=0.53) +
+  geom_smooth(method="gam", colour="midnightblue", fill="deepskyblue4", formula = y ~ s(x, bs = "cs", k =6)) +
+  theme_minimal() +
+  xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
+  ylab("Total UMSARS 1 Score \n At each evaluation \n")
+
+max(dataCohorteManaged$UMSARS2_TOT, na.rm=T) # 52
+
+# GAM with a cubic spline (with “shrinkage”)  and 3 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
+  filter(TIME_SYMPT<=15) %>%
+  ggplot(aes(TIME_SYMPT, UMSARS2_TOT)) +
+  geom_jitter(size=0.1, fill=0.53) +
+  geom_smooth(method="gam", colour="midnightblue", fill="deepskyblue4", formula = y ~ s(x, bs = "cs", k =6)) +
+  theme_minimal() +
+  xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
+  ylab("Total UMSARS 2 Score \n At each evaluation \n")
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
+  filter(TIME_SYMPT<=15) %>%
+  ggplot(aes(TIME_SYMPT, UMSARS4)) +
+  geom_jitter(size=0.1, fill=0.53, height=0.1) +
+  geom_smooth(method="gam", colour="midnightblue", fill="deepskyblue4", formula = y ~ s(x, bs = "cs", k =6)) +
+  theme_minimal() +
+  xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
+  ylab("Total UMSARS 4 Score \n At each evaluation \n")
+
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , PAD_COU, PAS_COU, deltaPAD, deltaPAS) %>%
+  filter(TIME_SYMPT<=15) %>%
+  gather(Type, Pressure, PAD_COU:PAS_COU) %>% 
+  mutate(Type=ifelse(Type=="PAD_COU", "Diastolic", "Systolic")) %>%
+  ggplot(aes(TIME_SYMPT, Pressure, colour=Type, fill=Type)) +
+  geom_jitter(size=0.1, fill=0.53, height=0.1) +
+ # geom_smooth(method="gam", formula = y ~ s(x, bs = "cs", k =6)) +
+  geom_smooth(method="loess") +
+  theme_minimal() +
+  xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
+  ylab("Supine Diastolic / Systolic \n Blood Pressure (mmHg) \n At each evaluation \n") +
+  scale_colour_manual(values=c("#254556" , "#c40234" )) +
+  scale_fill_manual(values=c("#254556" , "#c40234" )) 
+
+
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , PAD_COU, PAS_COU, deltaPAD, deltaPAS) %>%
+  filter(TIME_SYMPT<=15) %>%
+  gather(Type, Pressure, deltaPAD:deltaPAS) %>% 
+  mutate(Type=ifelse(Type=="deltaPAS", "Systolic Drop", "Diastolic Drop")) %>%
+  ggplot(aes(TIME_SYMPT, Pressure, colour=Type, fill=Type)) +
+  geom_jitter(size=0.1, fill=0.53, height=0.1) +
+  # geom_smooth(method="gam", formula = y ~ s(x, bs = "cs", k =6)) +
+  geom_smooth(method="loess") +
+  theme_minimal() +
+  ylim(-100,25) +
+  xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
+  ylab("MAX supine-to-standing Diastolic / Systolic \n Blood Pressure Drop (mmHg) \n At each evaluation \n") +
+  scale_colour_manual(values=c("#254556" , "#c40234" )) +
+  scale_fill_manual(values=c("#254556" , "#c40234" )) 
+
+
+
+
+
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
+  mutate(TIME_SYMPT=round(TIME_SYMPT)) %>%
+  group_by(TIME_SYMPT, UMSARS4) %>% count() %>%
+  drop_na() %>%
+  ungroup() %>% group_by(TIME_SYMPT) %>% mutate(TOTAL=sum(n)) %>%
+  mutate(n=n/TOTAL) %>% select(-TOTAL) %>%
+  filter(TIME_SYMPT<=20) %>%
+  ggplot(aes(TIME_SYMPT, 100*n, colour=as.factor(UMSARS4)), fill=as.factor(UMSARS4)) +
+  geom_path(linewidth=2) +
+  theme_minimal() +
+  xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
+  ylab("% of patients ON each UMSARS 4 Score \n At each evaluation \n") +
+  scale_colour_manual(values=c("#e3dac9", "#f8cd48" , "#ff4f00" , "#254556" , "#c40234" ))
+
+
+
+
+
+# ----------------------------------------------
+
 # Summary descriptive stats ------------------------
 
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
@@ -769,3 +890,704 @@ chisq.test(M,  simulate.p.value =T)
 
 
 # ----------------------------
+
+# 9 item UMSARS ------------------------------------------------
+
+# 9-item I1, I4, I5, I6, I7, I10, II11, II12, II14
+# 11-item UMSARS-1 items 2, 3, 6, 7, 11; UMSARS-2 items 1, 2, 9, 11, 12, 14
+
+dataCohorteManaged <- dataCohorteManaged %>% 
+  mutate(UMSARS_9item = UMSARS1_1 + UMSARS1_4 + UMSARS1_5 + UMSARS1_6 + UMSARS1_7 + UMSARS1_10 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14) %>%
+  mutate(UMSARS_11item = UMSARS1_2 + UMSARS1_3 + UMSARS1_6 + UMSARS1_7 + UMSARS1_11 + UMSARS2_1 + UMSARS2_2 + UMSARS2_9 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14 ) 
+
+ClinicalTrialPats <- ClinicalTrialPats %>% 
+  mutate(UMSARS_9item = UMSARS1_1 + UMSARS1_4 + UMSARS1_5 + UMSARS1_6 + UMSARS1_7 + UMSARS1_10 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14) %>%
+  mutate(UMSARS_11item = UMSARS1_2 + UMSARS1_3 + UMSARS1_6 + UMSARS1_7 + UMSARS1_11 + UMSARS2_1 + UMSARS2_2 + UMSARS2_9 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14 ) 
+
+
+# Overall
+mean(dataCohorteManaged$UMSARS_9item, na.rm=T) ; sd(dataCohorteManaged$UMSARS_9item, na.rm=T) # 16.28 , 7.09
+median(dataCohorteManaged$UMSARS_9item, na.rm=T) ; quantile(dataCohorteManaged$UMSARS_9item, na.rm=T) # 15, 11-21
+sum(!is.na(dataCohorteManaged$UMSARS_9item)) ; sum(!is.na(dataCohorteManaged$UMSARS_9item))/732 # 699 , 95
+#P
+mean(dataCohorteManaged$UMSARS_9item[dataCohorteManaged$DIAG==1], na.rm=T) ; sd(dataCohorteManaged$UMSARS_9item[dataCohorteManaged$DIAG==1], na.rm=T) # 16.85 , 7.26
+median(dataCohorteManaged$UMSARS_9item[dataCohorteManaged$DIAG==1], na.rm=T) ; quantile(dataCohorteManaged$UMSARS_9item[dataCohorteManaged$DIAG==1], na.rm=T) # 16, 11-22
+#C
+mean(dataCohorteManaged$UMSARS_9item[dataCohorteManaged$DIAG==2], na.rm=T) ; sd(dataCohorteManaged$UMSARS_9item[dataCohorteManaged$DIAG==2], na.rm=T) # 15.04 , 6.55
+median(dataCohorteManaged$UMSARS_9item[dataCohorteManaged$DIAG==2], na.rm=T) ; quantile(dataCohorteManaged$UMSARS_9item[dataCohorteManaged$DIAG==2], na.rm=T) # 14, 10-19
+
+wilcox.test(
+  na.omit(dataCohorteManaged$UMSARS_9item[dataCohorteManaged$DIAG==1]), 
+  na.omit(dataCohorteManaged$UMSARS_9item[dataCohorteManaged$DIAG==2])
+)
+
+
+# Overall CT
+mean(ClinicalTrialPats$UMSARS_9item, na.rm=T) ; sd(ClinicalTrialPats$UMSARS_9item, na.rm=T) # 11.08 , 3.78
+median(ClinicalTrialPats$UMSARS_9item, na.rm=T) ; quantile(ClinicalTrialPats$UMSARS_9item, na.rm=T) # 11, 8-14
+sum(!is.na(ClinicalTrialPats$UMSARS_9item)) ; sum(!is.na(ClinicalTrialPats$UMSARS_9item))/338 # 100
+#P
+mean(ClinicalTrialPats$UMSARS_9item[ClinicalTrialPats$DIAG==1], na.rm=T) ; sd(ClinicalTrialPats$UMSARS_9item[ClinicalTrialPats$DIAG==1], na.rm=T) # 11.47 , 3.96
+median(ClinicalTrialPats$UMSARS_9item[ClinicalTrialPats$DIAG==1], na.rm=T) ; quantile(ClinicalTrialPats$UMSARS_9item[ClinicalTrialPats$DIAG==1], na.rm=T) # 11, 9-14
+#C
+mean(ClinicalTrialPats$UMSARS_9item[ClinicalTrialPats$DIAG==2], na.rm=T) ; sd(ClinicalTrialPats$UMSARS_9item[ClinicalTrialPats$DIAG==2], na.rm=T) # 10.24 , 3.22
+median(ClinicalTrialPats$UMSARS_9item[ClinicalTrialPats$DIAG==2], na.rm=T) ; quantile(ClinicalTrialPats$UMSARS_9item[ClinicalTrialPats$DIAG==2], na.rm=T) # 10, 8-12
+
+wilcox.test(
+  na.omit(ClinicalTrialPats$UMSARS_9item[ClinicalTrialPats$DIAG==1]), 
+  na.omit(ClinicalTrialPats$UMSARS_9item[ClinicalTrialPats$DIAG==2])
+)
+
+# ---------------------
+# 11 item UMSARS ------------------------------------------------
+
+
+# 9-item I1, I4, I5, I6, I7, I10, II11, II12, II14
+# 11-item UMSARS-1 items 2, 3, 6, 7, 11; UMSARS-2 items 1, 2, 9, 11, 12, 14
+
+dataCohorteManaged <- dataCohorteManaged %>% 
+  mutate(UMSARS_9item = UMSARS1_1 + UMSARS1_4 + UMSARS1_5 + UMSARS1_6 + UMSARS1_7 + UMSARS1_10 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14) %>%
+  mutate(UMSARS_11item = UMSARS1_2 + UMSARS1_3 + UMSARS1_6 + UMSARS1_7 + UMSARS1_11 + UMSARS2_1 + UMSARS2_2 + UMSARS2_9 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14 ) 
+
+ClinicalTrialPats <- ClinicalTrialPats %>% 
+  mutate(UMSARS_9item = UMSARS1_1 + UMSARS1_4 + UMSARS1_5 + UMSARS1_6 + UMSARS1_7 + UMSARS1_10 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14) %>%
+  mutate(UMSARS_11item = UMSARS1_2 + UMSARS1_3 + UMSARS1_6 + UMSARS1_7 + UMSARS1_11 + UMSARS2_1 + UMSARS2_2 + UMSARS2_9 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14 ) 
+
+
+
+# Overall
+mean(dataCohorteManaged$UMSARS_11item, na.rm=T) ; sd(dataCohorteManaged$UMSARS_11item, na.rm=T) # 20.91 , 7.79
+median(dataCohorteManaged$UMSARS_11item, na.rm=T) ; quantile(dataCohorteManaged$UMSARS_11item, na.rm=T) # 20, 15-26
+sum(!is.na(dataCohorteManaged$UMSARS_11item)) ; sum(!is.na(dataCohorteManaged$UMSARS_11item))/732 # 697 95
+#P
+mean(dataCohorteManaged$UMSARS_11item[dataCohorteManaged$DIAG==1], na.rm=T) ; sd(dataCohorteManaged$UMSARS_11item[dataCohorteManaged$DIAG==1], na.rm=T) # 21.59 , 8.01
+median(dataCohorteManaged$UMSARS_11item[dataCohorteManaged$DIAG==1], na.rm=T) ; quantile(dataCohorteManaged$UMSARS_11item[dataCohorteManaged$DIAG==1], na.rm=T) # 21, 16-27
+#C
+mean(dataCohorteManaged$UMSARS_11item[dataCohorteManaged$DIAG==2], na.rm=T) ; sd(dataCohorteManaged$UMSARS_11item[dataCohorteManaged$DIAG==2], na.rm=T) # 20.48 , 7.49
+median(dataCohorteManaged$UMSARS_11item[dataCohorteManaged$DIAG==2], na.rm=T) ; quantile(dataCohorteManaged$UMSARS_11item[dataCohorteManaged$DIAG==2], na.rm=T) # 19, 16-25
+
+wilcox.test(
+  na.omit(dataCohorteManaged$UMSARS_11item[dataCohorteManaged$DIAG==1]), 
+  na.omit(dataCohorteManaged$UMSARS_11item[dataCohorteManaged$DIAG==2])
+)
+
+
+# Overall CT
+mean(ClinicalTrialPats$UMSARS_11item, na.rm=T) ; sd(ClinicalTrialPats$UMSARS_11item, na.rm=T) # 15.33 , 4.78
+median(ClinicalTrialPats$UMSARS_11item, na.rm=T) ; quantile(ClinicalTrialPats$UMSARS_11item, na.rm=T) # 15, 12-18
+sum(!is.na(ClinicalTrialPats$UMSARS_11item)) ; sum(!is.na(ClinicalTrialPats$UMSARS_11item))/338 # 100
+#P
+mean(ClinicalTrialPats$UMSARS_11item[ClinicalTrialPats$DIAG==1], na.rm=T) ; sd(ClinicalTrialPats$UMSARS_11item[ClinicalTrialPats$DIAG==1], na.rm=T) # 15.83 , 5.07
+median(ClinicalTrialPats$UMSARS_11item[ClinicalTrialPats$DIAG==1], na.rm=T) ; quantile(ClinicalTrialPats$UMSARS_11item[ClinicalTrialPats$DIAG==1], na.rm=T) # 16, 13-19
+#C
+mean(ClinicalTrialPats$UMSARS_11item[ClinicalTrialPats$DIAG==2], na.rm=T) ; sd(ClinicalTrialPats$UMSARS_11item[ClinicalTrialPats$DIAG==2], na.rm=T) # 14.26 , 3.88
+median(ClinicalTrialPats$UMSARS_11item[ClinicalTrialPats$DIAG==2], na.rm=T) ; quantile(ClinicalTrialPats$UMSARS_11item[ClinicalTrialPats$DIAG==2], na.rm=T) # 15, 12-17
+
+wilcox.test(
+  na.omit(ClinicalTrialPats$UMSARS_11item[ClinicalTrialPats$DIAG==1]), 
+  na.omit(ClinicalTrialPats$UMSARS_11item[ClinicalTrialPats$DIAG==2])
+)
+
+
+# -----------------------------------------------
+
+
+# No of visits --------------------------------
+
+dataCohorteManaged_pats <- dataCohorteManaged %>% select(NUM, DIAG)
+ClinicalTrialPats_pats <- ClinicalTrialPats %>% select(NUM, DIAG)
+
+dataCohorteManaged_all <- readRDS("Source/dataCohorteManaged.rds")
+
+n_visits <- data.table(dataCohorteManaged_all)[, .(n_visits = .N), by = NUM]
+
+dataCohorteManaged_pats <- dataCohorteManaged_pats %>% left_join(n_visits)
+ClinicalTrialPats_pats <- ClinicalTrialPats_pats %>% left_join(n_visits)
+
+mean(dataCohorteManaged_pats$n_visits)
+mean(ClinicalTrialPats_pats$n_visits)
+
+
+# Overall
+mean(dataCohorteManaged_pats$n_visits, na.rm=T) ; sd(dataCohorteManaged_pats$n_visits, na.rm=T) # 3.18 , 2.35
+median(dataCohorteManaged_pats$n_visits, na.rm=T) ; quantile(dataCohorteManaged_pats$n_visits, na.rm=T) # 3, 1-4
+sum(!is.na(dataCohorteManaged_pats$n_visits)) ; sum(!is.na(dataCohorteManaged_pats$n_visits))/732 # 732, 100
+#P
+mean(dataCohorteManaged_pats$n_visits[dataCohorteManaged_pats$DIAG==1], na.rm=T) ; sd(dataCohorteManaged_pats$n_visits[dataCohorteManaged_pats$DIAG==1], na.rm=T) # 3.09 , 2.32
+median(dataCohorteManaged_pats$n_visits[dataCohorteManaged_pats$DIAG==1], na.rm=T) ; quantile(dataCohorteManaged_pats$n_visits[dataCohorteManaged_pats$DIAG==1], na.rm=T) # 3, 1-4
+#C
+mean(dataCohorteManaged_pats$n_visits[dataCohorteManaged_pats$DIAG==2], na.rm=T) ; sd(dataCohorteManaged_pats$n_visits[dataCohorteManaged_pats$DIAG==2], na.rm=T) # 3.38 , 2.40
+median(dataCohorteManaged_pats$n_visits[dataCohorteManaged_pats$DIAG==2], na.rm=T) ; quantile(dataCohorteManaged_pats$n_visits[dataCohorteManaged_pats$DIAG==2], na.rm=T) # 3, 1-5
+
+wilcox.test(
+  na.omit(dataCohorteManaged_pats$n_visits[dataCohorteManaged_pats$DIAG==1]), 
+  na.omit(dataCohorteManaged_pats$n_visits[dataCohorteManaged_pats$DIAG==2])
+)
+
+
+# Overall CT
+mean(ClinicalTrialPats_pats$n_visits, na.rm=T) ; sd(ClinicalTrialPats_pats$n_visits, na.rm=T) # 3.85 , 2.69
+median(ClinicalTrialPats_pats$n_visits, na.rm=T) ; quantile(ClinicalTrialPats_pats$n_visits, na.rm=T) # 3, 2-5
+sum(!is.na(ClinicalTrialPats_pats$n_visits)) ; sum(!is.na(ClinicalTrialPats_pats$n_visits))/338 # 100
+#P
+mean(ClinicalTrialPats_pats$n_visits[ClinicalTrialPats_pats$DIAG==1], na.rm=T) ; sd(ClinicalTrialPats_pats$n_visits[ClinicalTrialPats_pats$DIAG==1], na.rm=T) # 3.79 , 2.63
+median(ClinicalTrialPats_pats$n_visits[ClinicalTrialPats_pats$DIAG==1], na.rm=T) ; quantile(ClinicalTrialPats_pats$n_visits[ClinicalTrialPats_pats$DIAG==1], na.rm=T) # 3, 2-5
+#C
+mean(ClinicalTrialPats_pats$n_visits[ClinicalTrialPats_pats$DIAG==2], na.rm=T) ; sd(ClinicalTrialPats_pats$n_visits[ClinicalTrialPats_pats$DIAG==2], na.rm=T) # 3.97 , 2.82
+median(ClinicalTrialPats_pats$n_visits[ClinicalTrialPats_pats$DIAG==2], na.rm=T) ; quantile(ClinicalTrialPats_pats$n_visits[ClinicalTrialPats_pats$DIAG==2], na.rm=T) # 3, 2-6
+
+wilcox.test(
+  na.omit(ClinicalTrialPats_pats$n_visits[ClinicalTrialPats_pats$DIAG==1]), 
+  na.omit(ClinicalTrialPats_pats$n_visits[ClinicalTrialPats_pats$DIAG==2])
+)
+
+# ----------------
+# Total months visibility ------------------------------
+
+dataCohorteManaged_all <- readRDS("Source/dataCohorteManaged.rds")
+
+visibility <- dataCohorteManaged_all %>% group_by(NUM) %>% summarise(First=min(as.Date(DATECONSULT)), 
+                                                                     Last=max(as.Date(DATECONSULT)))  %>%
+  mutate(elapsed=as.numeric(Last-First)/30.5) %>% ungroup() %>% select(NUM, elapsed)
+
+
+dataCohorteManaged_pats <- dataCohorteManaged_pats %>% left_join(visibility)
+ClinicalTrialPats_pats <- ClinicalTrialPats_pats %>% left_join(visibility)
+
+mean(dataCohorteManaged_pats$elapsed)
+mean(ClinicalTrialPats_pats$elapsed)
+
+
+# Overall
+mean(dataCohorteManaged_pats$elapsed, na.rm=T) ; sd(dataCohorteManaged_pats$elapsed, na.rm=T) # 23.33 , 26.06
+median(dataCohorteManaged_pats$elapsed, na.rm=T) ; quantile(dataCohorteManaged_pats$elapsed, na.rm=T) # 15, 0-36
+sum(!is.na(dataCohorteManaged_pats$elapsed)) ; sum(!is.na(dataCohorteManaged_pats$elapsed))/732 # 732, 100
+#P
+mean(dataCohorteManaged_pats$elapsed[dataCohorteManaged_pats$DIAG==1], na.rm=T) ; sd(dataCohorteManaged_pats$elapsed[dataCohorteManaged_pats$DIAG==1], na.rm=T) # 22.30 , 26.00
+median(dataCohorteManaged_pats$elapsed[dataCohorteManaged_pats$DIAG==1], na.rm=T) ; quantile(dataCohorteManaged_pats$elapsed[dataCohorteManaged_pats$DIAG==1], na.rm=T) # 14, 0-32
+#C
+mean(dataCohorteManaged_pats$elapsed[dataCohorteManaged_pats$DIAG==2], na.rm=T) ; sd(dataCohorteManaged_pats$elapsed[dataCohorteManaged_pats$DIAG==2], na.rm=T) # 25.54 , 26.10
+median(dataCohorteManaged_pats$elapsed[dataCohorteManaged_pats$DIAG==2], na.rm=T) ; quantile(dataCohorteManaged_pats$elapsed[dataCohorteManaged_pats$DIAG==2], na.rm=T) # 21, 0-40
+
+wilcox.test(
+  na.omit(dataCohorteManaged_pats$elapsed[dataCohorteManaged_pats$DIAG==1]), 
+  na.omit(dataCohorteManaged_pats$elapsed[dataCohorteManaged_pats$DIAG==2])
+)
+
+
+# Overall CT
+mean(ClinicalTrialPats_pats$elapsed, na.rm=T) ; sd(ClinicalTrialPats_pats$elapsed, na.rm=T) # 30.56 , 29.63
+median(ClinicalTrialPats_pats$elapsed, na.rm=T) ; quantile(ClinicalTrialPats_pats$elapsed, na.rm=T) # 24, 8-47
+sum(!is.na(ClinicalTrialPats_pats$elapsed)) ; sum(!is.na(ClinicalTrialPats_pats$elapsed))/338 # 100
+#P
+mean(ClinicalTrialPats_pats$elapsed[ClinicalTrialPats_pats$DIAG==1], na.rm=T) ; sd(ClinicalTrialPats_pats$elapsed[ClinicalTrialPats_pats$DIAG==1], na.rm=T) # 30.16 , 29.20
+median(ClinicalTrialPats_pats$elapsed[ClinicalTrialPats_pats$DIAG==1], na.rm=T) ; quantile(ClinicalTrialPats_pats$elapsed[ClinicalTrialPats_pats$DIAG==1], na.rm=T) # 24, 9-46
+#C
+mean(ClinicalTrialPats_pats$elapsed[ClinicalTrialPats_pats$DIAG==2], na.rm=T) ; sd(ClinicalTrialPats_pats$elapsed[ClinicalTrialPats_pats$DIAG==2], na.rm=T) # 31.42 , 30.65
+median(ClinicalTrialPats_pats$elapsed[ClinicalTrialPats_pats$DIAG==2], na.rm=T) ; quantile(ClinicalTrialPats_pats$elapsed[ClinicalTrialPats_pats$DIAG==2], na.rm=T) # 25, 7-49
+
+wilcox.test(
+  na.omit(ClinicalTrialPats_pats$elapsed[ClinicalTrialPats_pats$DIAG==1]), 
+  na.omit(ClinicalTrialPats_pats$elapsed[ClinicalTrialPats_pats$DIAG==2])
+)
+
+# --------------------------------------
+
+# Annual changes -------------------------------------------------
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+setDT(dataCohorteManaged)
+dataCohorteManaged[, DIAGNIV := ifelse(is.na(DIAGNIV), 1, DIAGNIV)]
+names(dataCohorteManaged)
+
+ClinicalTrialPats <- fread("Source/ClinicalTrialPats.txt")
+ClinicalTrialPats <- data.table(ClinicalTrialPats)[dataCohorteManaged, on = "NUM", nomatch = 0]
+
+dataCohorteManaged %>% group_by(NUM) %>% count() %>% filter(n>1) %>%
+  select(NUM) %>% distinct() %>% ungroup() %>%
+  left_join(
+    dataCohorteManaged
+  ) %>% 
+  select(NUM, DATE_VISITE0, DATECONSULT, TIME_SYMPT, UMSARS1_TOT) %>%
+  group_by(NUM) %>% slice(1:2) %>%
+  mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "years") ) %>%
+  mutate(change =  UMSARS1_TOT - lag(UMSARS1_TOT) ) %>% 
+  ungroup() %>%
+  drop_na() %>%
+  summarise(mean_change=mean(change/elapsed))
+
+
+# --------------------------------
+# Annual changes between 1st and 2nd visit only -------------------------------------------------
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+setDT(dataCohorteManaged)
+dataCohorteManaged[, DIAGNIV := ifelse(is.na(DIAGNIV), 1, DIAGNIV)]
+
+ClinicalTrialPats <- fread("Source/ClinicalTrialPats.txt")
+ClinicalTrialPats <- data.table(ClinicalTrialPats)[dataCohorteManaged, on = "NUM", nomatch = 0]
+
+
+
+calculate_mean_change <- function(data, variable) {
+  
+  data <- data.table(dataCohorteManaged)
+  
+  multiple_entries <- data[, .N, by = .(NUM)][N > 1, .(NUM)]
+  
+  filtered_data <- data[multiple_entries, on = "NUM", nomatch = 0]
+  
+  arranged_data <- filtered_data[order(NUM, DATECONSULT), .(NUM, DATE_VISITE0, DATECONSULT, TIME_STUDY, get(variable))]
+  
+  names(arranged_data)[5] <- eval(variable)
+  
+  selected_rows <- arranged_data[, .SD[1:2], by = NUM]
+  
+  selected_rows <- selected_rows[, .(elapsed = as.numeric(difftime(DATECONSULT, 
+                                                                   lag(DATECONSULT)), units = "days") / 365.25 ,
+                                     change = get(variable) - lag(get(variable))), by = NUM]
+  
+  selected_rows <- na.omit(selected_rows)
+  
+  result <- selected_rows[, .(mean_change = mean(change / elapsed, na.rm = TRUE))]
+  
+  print(length(unique(selected_rows$NUM)))
+  
+  return(result)
+}
+
+
+
+
+calculate_sd_change <- function(data, variable) {
+  
+  data <- data.table(dataCohorteManaged)
+  
+  multiple_entries <- data[, .N, by = .(NUM)][N > 1, .(NUM)]
+  
+  filtered_data <- data[multiple_entries, on = "NUM", nomatch = 0]
+  
+  arranged_data <- filtered_data[order(NUM, DATECONSULT), .(NUM, DATE_VISITE0, DATECONSULT, TIME_STUDY, get(variable))]
+  
+  names(arranged_data)[5] <- eval(variable)
+  
+  selected_rows <- arranged_data[, .SD[1:2], by = NUM]
+  
+  selected_rows <- selected_rows[, .(elapsed = as.numeric(difftime(DATECONSULT, 
+                                                                   lag(DATECONSULT)), units = "days") / 365.25 ,
+                                     change = get(variable) - lag(get(variable))), by = NUM]
+  
+  
+  selected_rows <- na.omit(selected_rows)
+  
+  result <- selected_rows[, .(sd_change = sd(change / elapsed, na.rm = TRUE))]
+  
+  print(length(unique(selected_rows$NUM)))
+  
+  return(result)
+  
+}
+
+
+
+# dataCohorteManaged %>% select(contains("UMSARS1")) 1  12
+# dataCohorteManaged %>% select(contains("UMSARS2")) 1  14
+
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_TOT") # 6.351315 # 469
+calculate_sd_change(dataCohorteManaged, "UMSARS1_TOT") # 21.07343 # 469
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_1") # 0.569671 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_1") # 2.56443
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_2") # 0.555052 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_2") # 1.818505 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_3") # 0.5985834 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_3") # 2.663461 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_4") # 0.6548055 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_4") # 1.814806 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_5") # 0.8134834 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_5") # 1.715658 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_6") # 0.6688437 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_6") # 1.689408 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_7") # 0.5854466 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_7") # 2.507582 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_8") # 0.5751491 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_8") # 3.781044 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_9") # 0.2475668 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_9") # 2.877324 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_10") # 0.3895957 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_10") # 1.912053 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_11") # 0.3427763 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_11") # 2.132229 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1_12") # 0.3179752 
+calculate_sd_change(dataCohorteManaged, "UMSARS1_12") # 1.465573 
+
+
+
+
+
+
+
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_TOT") # 6.162232 # 477
+calculate_sd_change(dataCohorteManaged, "UMSARS2_TOT") # 23.88615 # 477
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_1") # 0.4355156 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_1") # 1.596423 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_2") # 0.4899938 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_2") # 2.456193 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_3") # 0.1481903 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_3") # 1.677974 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_4") # 0.2302359 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_4") # 1.666864 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_5") # 0.1602097 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_5") # 1.72882 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_6") # 0.2496756 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_6") # 1.667659 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_7") # 0.3600315 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_7") # 2.571654 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_8") # 0.5219486 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_8") # 3.599404 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_9") # 0.5173146 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_9") # 2.627202 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_10") # 0.3977415 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_10") # 1.96035 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_11") # 0.8908961 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_11") # 2.330879 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_12") # 0.585813 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_12") # 4.662676 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_13") # 0.5614601 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_13") # 2.170059 
+
+calculate_mean_change(dataCohorteManaged, "UMSARS2_14") # 0.6123598 
+calculate_sd_change(dataCohorteManaged, "UMSARS2_14") # 2.41617 
+
+
+
+
+
+calculate_mean_change(dataCohorteManaged, "UMSARS1and2_TOT") # 12.57423  # 461
+calculate_sd_change(dataCohorteManaged, "UMSARS1and2_TOT") # 43.88907 # 461
+
+
+
+calculate_mean_change(dataCohorteManaged, "UMSARS4") # 0.6015983  # 470
+calculate_sd_change(dataCohorteManaged, "UMSARS4") # 1.032175 # 470
+
+calculate_mean_change(dataCohorteManaged, "PAD_COU") # -1.411116  # 402
+calculate_sd_change(dataCohorteManaged, "PAD_COU") # 24.39399 # 402
+
+calculate_mean_change(dataCohorteManaged, "PAS_COU") # -2.156203  # 402
+calculate_sd_change(dataCohorteManaged, "PAS_COU") # 38.68916 # 402
+
+calculate_mean_change(dataCohorteManaged, "deltaPAD") # -2.359843  # 399
+calculate_sd_change(dataCohorteManaged, "deltaPAD") # 33.40441 # 399
+
+calculate_mean_change(dataCohorteManaged, "deltaPAS") # -0.8558498  # 399
+calculate_sd_change(dataCohorteManaged, "deltaPAS") # 42.69922 # 399
+
+
+
+
+
+
+
+# --------------------------------
+# Overall mortality ---------------------------
+
+
+
+library(tidyverse)
+library(data.table)
+library(lubridate)
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+setDT(dataCohorteManaged)
+dataCohorteManaged[, DIAGNIV := ifelse(is.na(DIAGNIV), 1, DIAGNIV)]
+
+df_id <- dataCohorteManaged %>% select(NUM, TIME_STUDY, DC, DATECONSULT, DATEDC) %>%
+  mutate(DATECONSULT=as.numeric(DATECONSULT)) %>%
+  group_by(NUM) %>% mutate(min=min(DATECONSULT)) %>% mutate(DATECONSULT= (DATECONSULT-min)/365.5) %>%
+  group_by(NUM) %>% mutate(DATEDC=as.numeric(DATEDC)) %>% mutate(DATEDC= (DATEDC-min)/365.5) %>%
+  select(-min)
+
+
+df_id <- df_id %>% ungroup() %>% select(NUM) %>% distinct() %>%
+  left_join(
+    df_id %>% ungroup() %>% select(NUM, DATEDC) %>% group_by(NUM) %>% filter(DATEDC==max(DATEDC)) %>% distinct()
+  ) %>%
+  left_join(
+    df_id %>% ungroup() %>% select(NUM, DC) %>% group_by(NUM) %>% filter(DC==max(DC)) %>% distinct()
+  ) %>%
+  left_join(
+    df_id %>% ungroup() %>% select(NUM, TIME_STUDY) %>% group_by(NUM) %>% filter(TIME_STUDY==max(TIME_STUDY, na.rm = T)) %>% distinct()
+  ) %>% 
+  left_join(
+    dataCohorteManaged %>% group_by(NUM) %>% filter(DATECONSULT==min(DATECONSULT)) %>% select(NUM, DIAG, DIAGNIV, AGE_VISITE0, SEXE, UMSARS1and2_TOT, deltaPAD, deltaPAS, PAD_COU, PAS_COU, UMSARS4 )
+  ) %>%
+  mutate(DATEDC = ifelse(is.na(DATEDC), TIME_STUDY, DATEDC))
+
+library(survival)
+library(survminer)
+
+# + deltaPAD + deltaPAS + PAS_COU + PAD_COU + UMSARS4
+
+coxFit <- coxph(Surv(DATEDC, DC) ~ as.factor(DIAG) +  as.factor(DIAGNIV) + 
+                  as.factor(SEXE) + AGE_VISITE0 + UMSARS1and2_TOT , 
+                data = df_id, x = TRUE, model=TRUE)
+
+summary(coxFit)
+
+
+sfit1 <- survfit(Surv(DATEDC, DC)~1, data=df_id)
+sfit1
+summary(sfit1)
+
+ggsurvplot(sfit1)
+
+ggsurvplot(sfit1, conf.int=TRUE,
+           fun = "pct",
+           risk.table=TRUE,  
+           surv.median.line = "hv" ,  
+           palette=c("deepskyblue4"), colour="deepskyblue4", 
+           title="Kaplan-Meier Curve for Survival \n Entire French MSA Cohort", 
+           risk.table.height=0.2)
+
+
+ggsurvplot(sfit1, conf.int=TRUE,
+           fun = "cumhaz",
+           risk.table=TRUE, 
+           surv.median.line = "hv" ,  
+           palette=c("deepskyblue4"), colour="deepskyblue4", 
+           title="Cumulative Hazard \n Entire French MSA Cohort", 
+           risk.table.height=0.2)
+
+
+sfit2 <- survfit(Surv(DATEDC, DC)~DIAGNIV, data=df_id)
+sfit2
+plot(sfit2, fun = "cumhaz") # proportional hazards (PH) assumption is satisfied
+summary(sfit2)
+
+survdiff(Surv(DATEDC, DC) ~ DIAGNIV, data = df_id, rho = 1) # 2e-09 
+
+ggsurvplot(sfit2)
+
+ggsurvplot(sfit2, conf.int=TRUE, pval=TRUE, pval.method = TRUE, risk.table=TRUE, 
+           surv.median.line = "hv" ,
+           legend.labs=c("1", "2"), legend.title="Possible MSA (1) vs Probable MSA (2)",  
+           palette=c("midnightblue", "firebrick"), 
+           title="Kaplan-Meier Curve for Survival \n by MSA Diagnostic Certitude", 
+           risk.table.height=0.2)
+
+
+ggsurvplot(sfit2, conf.int=TRUE, pval=TRUE, pval.method = TRUE, 
+           fun="cumhaz",
+           risk.table=TRUE, 
+           surv.median.line = "hv" ,
+           legend.labs=c("1", "2"), legend.title="Possible MSA (1) vs Probable MSA (2)",  
+           palette=c("midnightblue", "firebrick"), 
+           title="Cumulative Hazard \n by MSA Diagnostic Certitude", 
+           risk.table.height=0.2)
+
+
+sfit3 <- survfit(Surv(DATEDC, DC)~DIAG, data=df_id)
+sfit3
+summary(sfit3)
+plot(sfit3, fun = "cumhaz") # proportional hazards (PH) assumption NOT satisfied
+
+summary(coxph(Surv(DATEDC, DC) ~ DIAG, data = df_id, x = TRUE)) 
+
+survdiff(Surv(DATEDC, DC) ~ DIAG, data = df_id, rho = 1) #0.01 
+
+ggsurvplot(sfit3)
+
+
+ggsurvplot(sfit3, conf.int=TRUE, pval=TRUE, pval.method = TRUE,
+           risk.table=TRUE, 
+           surv.median.line = "hv" ,
+           legend.labs=c("1", "2"), legend.title="MSA-P (1) vs MSA-C (2)",  
+           palette=c("midnightblue", "firebrick"), 
+           title="Kaplan-Meier Curve for Survival \n by MSA Clinical Phenotype ", 
+           risk.table.height=0.3)
+
+
+ggsurvplot(sfit3, conf.int=TRUE, pval=TRUE, pval.method = TRUE,
+           risk.table=TRUE,     fun="cumhaz",
+           surv.median.line = "hv" ,
+           legend.labs=c("1", "2"), legend.title="MSA-P (1) vs MSA-C (2)",  
+           palette=c("midnightblue", "firebrick"), 
+           title="Cumulative Hazard \n by MSA Clinical Phenotype ", 
+           risk.table.height=0.3)
+
+
+
+
+# -----------------------
+
+# Joint modeling -----------------------------
+
+library(tidyverse)
+library(data.table)
+library(lubridate)
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+setDT(dataCohorteManaged)
+dataCohorteManaged[, DIAGNIV := ifelse(is.na(DIAGNIV), 1, DIAGNIV)]
+
+df <- dataCohorteManaged[ , c("NUM", "TIME_SYMPT", "UMSARS1and2_TOT")]
+df <- na.omit(df)
+length(unique(df$NUM))
+
+df_id <- dataCohorteManaged %>% select(NUM, TIME_SYMPT, DC, DATECONSULT, DATEDC) %>%
+  mutate(DATECONSULT=as.numeric(DATECONSULT)) %>%
+  group_by(NUM) %>% mutate(min=min(DATECONSULT)) %>% mutate(DATECONSULT= (DATECONSULT-min)/365.5) %>%
+  group_by(NUM) %>% mutate(DATEDC=as.numeric(DATEDC)) %>% mutate(DATEDC= (DATEDC-min)/365.5) %>%
+  select(-min)
+
+
+df_id <- df_id %>% ungroup() %>% select(NUM) %>% distinct() %>%
+  left_join(
+    df_id %>% ungroup() %>% select(NUM, DATEDC) %>% group_by(NUM) %>% filter(DATEDC==max(DATEDC, na.rm = T)) %>% distinct()
+  ) %>%
+  left_join(
+    df_id %>% ungroup() %>% select(NUM, DC) %>% group_by(NUM) %>% filter(DC==max(DC, na.rm = T)) %>% distinct()
+  ) %>%
+  left_join(
+    df_id %>% ungroup() %>% select(NUM, TIME_SYMPT) %>% group_by(NUM) %>% filter(TIME_SYMPT==max(TIME_SYMPT, na.rm = T)) %>% distinct()
+  ) %>% 
+  left_join(
+    dataCohorteManaged %>% group_by(NUM) %>% filter(DATECONSULT==max(DATECONSULT)) %>% select(NUM, DIAG, DIAGNIV)
+  ) %>%
+  mutate(DATEDC = ifelse(is.na(DATEDC), TIME_SYMPT, DATEDC))
+
+df_id <- df %>% select(NUM) %>% inner_join(df_id) %>% distinct() %>% select(NUM, DATEDC, DC)
+
+df <- df %>% left_join(df_id %>% select(NUM, DATEDC, DC))
+
+sum(is.na(df))
+
+df <- df %>% mutate(DATEDC=ifelse(DATEDC==TIME_SYMPT, DATEDC+0.01, DATEDC))
+
+df_id <- df %>% group_by(NUM) %>% filter(DATEDC==max(DATEDC)) %>%  select(NUM, DATEDC, DC) %>% distinct() 
+
+
+ggplot(df, aes(x = TIME_SYMPT, y = UMSARS1and2_TOT)) +
+  geom_line(aes(group=NUM), col="deepskyblue4" , alpha=0.3) +
+  geom_jitter(size=0.1, colour="deepskyblue4", alpha=0.7) +
+  stat_smooth(method="gam", col="firebrick", fill="firebrick", alpha=0.3, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =6))+
+  scale_x_continuous(name = "Time from Symptom Onset (Years)") +
+  scale_y_continuous(name = "UMSARS I + II",limits=c(0,100)) +
+  theme_minimal() 
+
+
+
+library(nlme)
+library(JM)
+library(survival)
+
+
+
+lmeFit.p1 <- lme(UMSARS1and2_TOT    ~ 1 , data = df,
+                 random = ~ 1 | NUM)  
+
+summary(lmeFit.p1)
+# (10.74232 ^2) / (  (10.74232 ^2) + (14.01453^2)) -> 0.3700955
+intervals(lmeFit.p1)
+
+
+
+lmeFit.p2 <- lme(UMSARS1and2_TOT    ~ TIME_SYMPT , data = df,
+                 random = ~ 1 | NUM)  
+
+summary(lmeFit.p2)
+# (15.65778  ^2) / (  (15.65778  ^2) + (8.594463^2)) -> 0.7684713
+intervals(lmeFit.p2)
+
+
+
+lmeFit.p3 <- lme(UMSARS1and2_TOT    ~ TIME_SYMPT  , data = df,
+                 random = ~ TIME_SYMPT | NUM)  
+
+
+summary(lmeFit.p3)
+
+#  (19.044315^2) / (  (19.044315^2) + (5.876712^2)) -> 0.9130567
+intervals(lmeFit.p3)
+
+anova(lmeFit.p2, lmeFit.p3)
+
+# Model df      AIC      BIC    logLik   Test  L.Ratio p-value
+# lmeFit.p2     1  4 16863.11 16885.78 -8427.555                        
+# lmeFit.p3     2  6 16374.86 16408.87 -8181.429 1 vs 2 492.2525  <.0001
+
+
+
+
+survFit.p1 <- coxph(Surv(DATEDC, DC) ~ 1, data = df_id, x = TRUE)  
+
+summary(survFit.p1)
+
+
+jointFit.p1 <- jointModel(lmeFit.p3, survFit.p1, timeVar = "TIME_SYMPT",
+                          method = "piecewise-PH-aGH")
+
+summary(jointFit.p1)
+
+
+
+
+
+
+
+
+# dataP_1ARCOL0648 <- df[df$NUM == "1BEFRA0550", ]
+# 
+# len_id <- nrow(dataP_1ARCOL0648)
+# 
+# sfit3 <- survfitJM(jointFit.p1, newdata = dataP_1ARCOL0648[1:3, ], idVar = "NUM") 
+# sfit4 <- survfitJM(jointFit.p1, newdata = dataP_1ARCOL0648[1:6, ], idVar = "NUM") 
+# 
+# par(mfrow=c(1,2))
+# plotfit3 <- plot(sfit3, estimator="mean", include.y = TRUE, conf.int=0.95, fill.area=TRUE, col.area="lightblue", main="Patient 1ARCOL0648")
+# plotfit4 <- plot(sfit4, estimator="mean", include.y = TRUE, conf.int=0.95, fill.area=TRUE, col.area="lightblue", main="Patient 1ARCOL0648")
+# 
+# 
+# library(animation)
+# 
+# saveGIF({
+#   for(i in c(1:len_id)){
+#     sfit <- survfitJM(jointFit.p1, newdata = dataP_1ARCOL0648[1:i, ], idVar = "NUM") 
+#     plot(sfit, estimator="mean", include.y = TRUE, conf.int=0.95, fill.area=TRUE, col.area="lightblue", main="Patient 1ARCOL0648")
+#     
+#   }
+# },ani.width = 400, ani.height=400)
+
+
+
+# ---------------------
+
+
+
