@@ -2,9 +2,9 @@
 library(tidyverse)
 library(data.table)
 library(lubridate)
-library(nlme)
-library(JM)
-library(survival)
+#library(nlme)
+#library(JM)
+#library(survival)
 
 options(scipen = 999)
 
@@ -48,6 +48,9 @@ sum(is.na(dataCohorteManaged) ) /
 
 # Total number of Visits per patient --------------------------------------------
 
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+setDT(dataCohorteManaged)
 
 dataCohorteManaged[, .(n_visits = .N), by = NUM][
   , .(mean = mean(n_visits),
@@ -209,13 +212,14 @@ names(dataCohorteManaged)
 #   with a score ≤2 on the items #2 (swallowing), #7 (walking), and #8 (falling).
 # UMSARS Part IV disability score ≤3.
 
-UMSARS1_1:UMSARS1_TOT
-dataCohorteManaged %>% filter(!is.na(UMSARS1_TOT) & !is.na(UMSARS2_TOT) &  !is.na(UMSARS4)  ) %>% select(NUM) %>% distinct()
+
+dataCohorteManaged %>% 
+  filter(!is.na(UMSARS1_TOT) & !is.na(UMSARS2_TOT) &  !is.na(UMSARS4)  ) %>% select(NUM) %>% distinct()
 
 
 data.table(dataCohorteManaged)[, .(NUM, UMSARS1_TOT)][!is.na(UMSARS1_TOT)] # 29 without
 
-data.table(dataCohorteManaged)[, .(NUM, UMSARS2_TOT)][!is.na(UMSARS1_TOT)] # 26 without
+data.table(dataCohorteManaged)[, .(NUM, UMSARS2_TOT)][!is.na(UMSARS2_TOT)] # 26 without
 
 data.table(dataCohorteManaged)[, .(NUM, UMSARS1_TOT)][!is.na(UMSARS1_TOT), .(NUM)][
   data.table(dataCohorteManaged)[, .(NUM, UMSARS2_TOT)][!is.na(UMSARS2_TOT), .(NUM)],
@@ -256,6 +260,9 @@ data.table(ClinicalTrialPats)[dataCohorteManaged, on = "NUM", nomatch = 0][, .(c
 
 # ---------------------------------------
 # Summary evolution UMSARS all datapoints ---------------------------
+
+#https://stackoverflow.com/questions/37379609/extract-knots-basis-coefficients-and-predictions-for-p-splines-in-adaptive-smo
+
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
 setDT(dataCohorteManaged)
 dataCohorteManaged[, DIAGNIV := ifelse(is.na(DIAGNIV), 1, DIAGNIV)]
@@ -266,37 +273,82 @@ ClinicalTrialPats <- data.table(ClinicalTrialPats)[dataCohorteManaged, on = "NUM
 
 max(dataCohorteManaged$UMSARS1_TOT, na.rm=T) # 46
 
-# GAM with a cubic spline (with “shrinkage”)  and 3 knots
-dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
-  filter(TIME_SYMPT<=15) %>%
-  ggplot(aes(TIME_SYMPT, UMSARS1_TOT)) +
-  geom_jitter(size=0.1, fill=0.53) +
-  geom_smooth(method="gam", colour="midnightblue", fill="deepskyblue4", formula = y ~ s(x, bs = "cs", k =6)) +
-  theme_minimal() +
-  xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
-  ylab("Total UMSARS 1 Score \n At each evaluation \n")
 
-max(dataCohorteManaged$UMSARS2_TOT, na.rm=T) # 52
-
-# GAM with a cubic spline (with “shrinkage”)  and 3 knots
-dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
-  filter(TIME_SYMPT<=15) %>%
-  ggplot(aes(TIME_SYMPT, UMSARS2_TOT)) +
-  geom_jitter(size=0.1, fill=0.53) +
-  geom_smooth(method="gam", colour="midnightblue", fill="deepskyblue4", formula = y ~ s(x, bs = "cs", k =6)) +
-  theme_minimal() +
-  xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
-  ylab("Total UMSARS 2 Score \n At each evaluation \n")
 
 # GAM with a cubic spline (with “shrinkage”)  and 6 knots
 dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
   filter(TIME_SYMPT<=15) %>%
-  ggplot(aes(TIME_SYMPT, UMSARS4)) +
-  geom_jitter(size=0.1, fill=0.53, height=0.1) +
-  geom_smooth(method="gam", colour="midnightblue", fill="deepskyblue4", formula = y ~ s(x, bs = "cs", k =6)) +
+  ggplot(aes(TIME_SYMPT, UMSARS1_TOT)) +
+  geom_line(aes(group=NUM), col="deepskyblue4" , alpha=0.3) +
+  geom_jitter(size=0.1, colour="deepskyblue4", alpha=0.7) +
+  stat_smooth(method="gam", col="firebrick", fill="firebrick", alpha=0.3, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =6))+
   theme_minimal() +
   xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
-  ylab("Total UMSARS 4 Score \n At each evaluation \n")
+  ylab("Total UMSARS 1 Score \n At each evaluation \n")
+
+
+
+max(dataCohorteManaged$UMSARS2_TOT, na.rm=T) # 52
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
+  filter(TIME_SYMPT<=15) %>%
+  ggplot(aes(TIME_SYMPT, UMSARS2_TOT)) +
+  geom_line(aes(group=NUM), col="deepskyblue4" , alpha=0.3) +
+  geom_jitter(size=0.1, colour="deepskyblue4", alpha=0.7) +
+  stat_smooth(method="gam", col="firebrick", fill="firebrick", alpha=0.3, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =6))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
+  ylab("Total UMSARS 2 Score \n At each evaluation \n")
+
+
+max(dataCohorteManaged$UMSARS1and2_TOT, na.rm=T) # 97
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4, UMSARS1and2_TOT) %>%
+  filter(TIME_SYMPT<=15) %>%
+  ggplot(aes(TIME_SYMPT, UMSARS1and2_TOT)) +
+  geom_line(aes(group=NUM), col="deepskyblue4" , alpha=0.3) +
+  geom_jitter(size=0.1, colour="deepskyblue4", alpha=0.7) +
+  stat_smooth(method="gam", col="firebrick", fill="firebrick", alpha=0.3, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =6))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
+  ylab("Total UMSARS 1 + 2 Total Score \n At each evaluation \n")
+
+
+
+
+# library(splines)
+# 
+# 
+# ignore <- dataCohorteManaged %>% select(UMSARS2_TOT, TIME_SYMPT)
+# ignore <- na.omit(ignore)
+# dim(ignore)
+# ignore <- data.frame(ignore)
+# 
+# spline_model <- lm(UMSARS2_TOT ~ ns(TIME_SYMPT, df = 6), data = ignore)
+# plot(spline_model)
+# 
+# 
+# df <- data.frame(0)
+# names(df) <- "TIME_SYMPT"
+# 
+# predicted_values <- predict(spline_model, newdata =  df)
+# 
+# predicted_values <- predict(spline_model, newdata = ignore)
+
+
+
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+# dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
+#   filter(TIME_SYMPT<=15) %>%
+#   ggplot(aes(TIME_SYMPT, UMSARS4)) +
+#   geom_jitter(size=0.1, fill=0.53, height=0.1) +
+#   geom_smooth(method="gam", colour="midnightblue", fill="deepskyblue4", formula = y ~ s(x, bs = "cs", k =6)) +
+#   theme_minimal() +
+#   xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
+#   ylab("Total UMSARS 4 Score \n At each evaluation \n")
 
 
 # GAM with a cubic spline (with “shrinkage”)  and 6 knots
@@ -311,8 +363,8 @@ dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , PAD_COU, PAS_COU, de
   theme_minimal() +
   xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
   ylab("Supine Diastolic / Systolic \n Blood Pressure (mmHg) \n At each evaluation \n") +
-  scale_colour_manual(values=c("#254556" , "#c40234" )) +
-  scale_fill_manual(values=c("#254556" , "#c40234" )) 
+  scale_colour_manual(values=c("deepskyblue4" , "firebrick" )) +
+  scale_fill_manual(values=c("deepskyblue4" , "firebrick" )) 
 
 
 
@@ -329,8 +381,8 @@ dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , PAD_COU, PAS_COU, de
   ylim(-100,25) +
   xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
   ylab("MAX supine-to-standing Diastolic / Systolic \n Blood Pressure Drop (mmHg) \n At each evaluation \n") +
-  scale_colour_manual(values=c("#254556" , "#c40234" )) +
-  scale_fill_manual(values=c("#254556" , "#c40234" )) 
+  scale_colour_manual(values=c("deepskyblue4" , "firebrick" )) +
+  scale_fill_manual(values=c("deepskyblue4" , "firebrick" )) 
 
 
 
@@ -342,13 +394,15 @@ dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2
   drop_na() %>%
   ungroup() %>% group_by(TIME_SYMPT) %>% mutate(TOTAL=sum(n)) %>%
   mutate(n=n/TOTAL) %>% select(-TOTAL) %>%
-  filter(TIME_SYMPT<=20) %>%
+  filter(TIME_SYMPT<=15) %>%
   ggplot(aes(TIME_SYMPT, 100*n, colour=as.factor(UMSARS4)), fill=as.factor(UMSARS4)) +
-  geom_path(linewidth=2) +
+  #geom_path(linewidth=2) +
+  geom_smooth(se=F, size=2) +
   theme_minimal() +
   xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
   ylab("% of patients ON each UMSARS 4 Score \n At each evaluation \n") +
-  scale_colour_manual(values=c("#e3dac9", "#f8cd48" , "#ff4f00" , "#254556" , "#c40234" ))
+  scale_colour_manual(values=c("#e3dac9", "#f8cd48" , "#ff4f00" , "#254556" , "#c40234" )) +
+  scale_fill_manual(values=c("#e3dac9", "#f8cd48" , "#ff4f00" , "#254556" , "#c40234" )) 
 
 
 
