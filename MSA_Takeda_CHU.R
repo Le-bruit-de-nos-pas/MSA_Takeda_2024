@@ -259,7 +259,7 @@ data.table(ClinicalTrialPats)[dataCohorteManaged, on = "NUM", nomatch = 0][, .(c
 # 4:    2       1    33
 
 # ---------------------------------------
-# Summary evolution UMSARS all datapoints ---------------------------
+# Summary evolution UMSARS all datapoints from symtom onset ---------------------------
 
 #https://stackoverflow.com/questions/37379609/extract-knots-basis-coefficients-and-predictions-for-p-splines-in-adaptive-smo
 
@@ -409,6 +409,155 @@ dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2
 
 
 # ----------------------------------------------
+
+# Summary evolution UMSARS all datapoints from first evaluation  ---------------------------
+
+#https://stackoverflow.com/questions/37379609/extract-knots-basis-coefficients-and-predictions-for-p-splines-in-adaptive-smo
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+setDT(dataCohorteManaged)
+dataCohorteManaged[, DIAGNIV := ifelse(is.na(DIAGNIV), 1, DIAGNIV)]
+names(dataCohorteManaged)
+
+ClinicalTrialPats <- fread("Source/ClinicalTrialPats.txt")
+ClinicalTrialPats <- data.table(ClinicalTrialPats)[dataCohorteManaged, on = "NUM", nomatch = 0]
+
+max(dataCohorteManaged$UMSARS1_TOT, na.rm=T) # 46
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
+  filter(TIME_STUDY<=9) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT)) +
+  geom_line(aes(group=NUM), col="deepskyblue4" , alpha=0.3) +
+  geom_jitter(size=0.1, colour="deepskyblue4", alpha=0.7) +
+  stat_smooth(method="gam", col="firebrick", fill="firebrick", alpha=0.3, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =6))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records]") +
+  ylab("Total UMSARS 1 Score \n At each evaluation \n")
+
+
+
+max(dataCohorteManaged$UMSARS2_TOT, na.rm=T) # 52
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
+  filter(TIME_STUDY<=9) %>%
+  ggplot(aes(TIME_STUDY, UMSARS2_TOT)) +
+  geom_line(aes(group=NUM), col="deepskyblue4" , alpha=0.3) +
+  geom_jitter(size=0.1, colour="deepskyblue4", alpha=0.7) +
+  stat_smooth(method="gam", col="firebrick", fill="firebrick", alpha=0.3, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =6))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records]") +
+  ylab("Total UMSARS 2 Score \n At each evaluation \n")
+
+
+max(dataCohorteManaged$UMSARS1and2_TOT, na.rm=T) # 97
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4, UMSARS1and2_TOT) %>%
+  filter(TIME_STUDY<=9) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1and2_TOT)) +
+  geom_line(aes(group=NUM), col="deepskyblue4" , alpha=0.3) +
+  geom_jitter(size=0.1, colour="deepskyblue4", alpha=0.7) +
+  stat_smooth(method="gam", col="firebrick", fill="firebrick", alpha=0.3, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =6))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records]") +
+  ylab("Total UMSARS 1 + 2 Total Score \n At each evaluation \n")
+
+
+
+
+# library(splines)
+# 
+# 
+# ignore <- dataCohorteManaged %>% select(UMSARS2_TOT, TIME_SYMPT)
+# ignore <- na.omit(ignore)
+# dim(ignore)
+# ignore <- data.frame(ignore)
+# 
+# spline_model <- lm(UMSARS2_TOT ~ ns(TIME_SYMPT, df = 6), data = ignore)
+# plot(spline_model)
+# 
+# 
+# df <- data.frame(0)
+# names(df) <- "TIME_SYMPT"
+# 
+# predicted_values <- predict(spline_model, newdata =  df)
+# 
+# predicted_values <- predict(spline_model, newdata = ignore)
+
+
+
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+# dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
+#   filter(TIME_SYMPT<=15) %>%
+#   ggplot(aes(TIME_SYMPT, UMSARS4)) +
+#   geom_jitter(size=0.1, fill=0.53, height=0.1) +
+#   geom_smooth(method="gam", colour="midnightblue", fill="deepskyblue4", formula = y ~ s(x, bs = "cs", k =6)) +
+#   theme_minimal() +
+#   xlab("\n Elapsed number of years since symptom onset \n [All available patient records]") +
+#   ylab("Total UMSARS 4 Score \n At each evaluation \n")
+
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , PAD_COU, PAS_COU, deltaPAD, deltaPAS) %>%
+  filter(TIME_STUDY<=9) %>%
+  gather(Type, Pressure, PAD_COU:PAS_COU) %>% 
+  mutate(Type=ifelse(Type=="PAD_COU", "Diastolic", "Systolic")) %>%
+  ggplot(aes(TIME_STUDY, Pressure, colour=Type, fill=Type)) +
+  geom_jitter(size=0.1, fill=0.53, height=0.1) +
+  # geom_smooth(method="gam", formula = y ~ s(x, bs = "cs", k =6)) +
+  geom_smooth(method="loess") +
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records]") +
+  ylab("Supine Diastolic / Systolic \n Blood Pressure (mmHg) \n At each evaluation \n") +
+  scale_colour_manual(values=c("deepskyblue4" , "firebrick" )) +
+  scale_fill_manual(values=c("deepskyblue4" , "firebrick" )) 
+
+
+
+# GAM with a cubic spline (with “shrinkage”)  and 6 knots
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , PAD_COU, PAS_COU, deltaPAD, deltaPAS) %>%
+  filter(TIME_STUDY<=9) %>%
+  gather(Type, Pressure, deltaPAD:deltaPAS) %>% 
+  mutate(Type=ifelse(Type=="deltaPAS", "Systolic Drop", "Diastolic Drop")) %>%
+  ggplot(aes(TIME_STUDY, Pressure, colour=Type, fill=Type)) +
+  geom_jitter(size=0.1, fill=0.53, height=0.1) +
+  # geom_smooth(method="gam", formula = y ~ s(x, bs = "cs", k =6)) +
+  geom_smooth(method="loess") +
+  theme_minimal() +
+  ylim(-100,25) +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records]") +
+  ylab("MAX supine-to-standing Diastolic / Systolic \n Blood Pressure Drop (mmHg) \n At each evaluation \n") +
+  scale_colour_manual(values=c("deepskyblue4" , "firebrick" )) +
+  scale_fill_manual(values=c("deepskyblue4" , "firebrick" )) 
+
+
+
+
+
+dataCohorteManaged %>% select(NUM, TIME_STUDY, TIME_SYMPT , UMSARS1_TOT, UMSARS2_TOT, UMSARS4) %>%
+  mutate(TIME_STUDY=round(TIME_STUDY)) %>%
+  group_by(TIME_STUDY, UMSARS4) %>% count() %>%
+  drop_na() %>%
+  ungroup() %>% group_by(TIME_STUDY) %>% mutate(TOTAL=sum(n)) %>%
+  mutate(n=n/TOTAL) %>% select(-TOTAL) %>%
+  filter(TIME_STUDY<=9) %>%
+  ggplot(aes(TIME_STUDY, 100*n, colour=as.factor(UMSARS4)), fill=as.factor(UMSARS4)) +
+  #geom_path(linewidth=2) +
+  geom_smooth(se=F, size=2) +
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records]") +
+  ylab("% of patients ON each UMSARS 4 Score \n At each evaluation \n") +
+  scale_colour_manual(values=c("#e3dac9", "#f8cd48" , "#ff4f00" , "#254556" , "#c40234" )) +
+  scale_fill_manual(values=c("#e3dac9", "#f8cd48" , "#ff4f00" , "#254556" , "#c40234" )) 
+
+# --------------------------------
+
+
+
+
 
 # Summary descriptive stats ------------------------
 
@@ -1147,6 +1296,50 @@ wilcox.test(
 
 # --------------------------------------
 
+# SCOPE AUT -----------------------------------
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+setDT(dataCohorteManaged)
+
+dataCohorteManaged <- dataCohorteManaged[, .SD[which.min(DATECONSULT)], by = NUM]
+
+dataCohorteManaged[, DIAGNIV := ifelse(is.na(DIAGNIV), 1, DIAGNIV)]
+
+ClinicalTrialPats <- fread("Source/ClinicalTrialPats.txt")
+ClinicalTrialPats <- data.table(ClinicalTrialPats)[dataCohorteManaged, on = "NUM", nomatch = 0]
+
+
+# Overall
+mean(dataCohorteManaged$SCOPA_scoretot, na.rm=T) ; sd(dataCohorteManaged$SCOPA_scoretot, na.rm=T) # 19.16 , 11.94
+median(dataCohorteManaged$SCOPA_scoretot, na.rm=T) ; quantile(dataCohorteManaged$SCOPA_scoretot, na.rm=T) # 20, 11.25-28.0
+sum(!is.na(dataCohorteManaged$SCOPA_scoretot)) ; sum(!is.na(dataCohorteManaged$SCOPA_scoretot))/732 # 346, 47%
+#P
+mean(dataCohorteManaged$SCOPA_scoretot[dataCohorteManaged$DIAG==1], na.rm=T) ; sd(dataCohorteManaged$SCOPA_scoretot[dataCohorteManaged$DIAG==1], na.rm=T) # 19.26 , 12.31
+median(dataCohorteManaged$SCOPA_scoretot[dataCohorteManaged$DIAG==1], na.rm=T) ; quantile(dataCohorteManaged$SCOPA_scoretot[dataCohorteManaged$DIAG==1], na.rm=T) # 21, 11-28
+#C
+mean(dataCohorteManaged$SCOPA_scoretot[dataCohorteManaged$DIAG==2], na.rm=T) ; sd(dataCohorteManaged$SCOPA_scoretot[dataCohorteManaged$DIAG==2], na.rm=T) # 18.94 , 11.09
+median(dataCohorteManaged$SCOPA_scoretot[dataCohorteManaged$DIAG==2], na.rm=T) ; quantile(dataCohorteManaged$SCOPA_scoretot[dataCohorteManaged$DIAG==2], na.rm=T) # 19, 12-26
+
+wilcox.test(dataCohorteManaged$SCOPA_scoretot[dataCohorteManaged$DIAG==1], 
+            dataCohorteManaged$SCOPA_scoretot[dataCohorteManaged$DIAG==2]) # 0.6099
+
+# Overall CT
+mean(ClinicalTrialPats$SCOPA_scoretot, na.rm=T) ; sd(ClinicalTrialPats$SCOPA_scoretot, na.rm=T) # 17.63 , 11.67
+median(ClinicalTrialPats$SCOPA_scoretot, na.rm=T) ; quantile(ClinicalTrialPats$SCOPA_scoretot, na.rm=T) # 19, 9-25
+sum(!is.na(ClinicalTrialPats$SCOPA_scoretot)) ; sum(!is.na(ClinicalTrialPats$SCOPA_scoretot))/338 # 138 41
+#P
+mean(ClinicalTrialPats$SCOPA_scoretot[ClinicalTrialPats$DIAG==1], na.rm=T) ; sd(ClinicalTrialPats$SCOPA_scoretot[ClinicalTrialPats$DIAG==1], na.rm=T) # 17.83 , 12.30
+median(ClinicalTrialPats$SCOPA_scoretot[ClinicalTrialPats$DIAG==1], na.rm=T) ; quantile(ClinicalTrialPats$SCOPA_scoretot[ClinicalTrialPats$DIAG==1], na.rm=T) # 19, 8-27
+#C
+mean(ClinicalTrialPats$SCOPA_scoretot[ClinicalTrialPats$DIAG==2], na.rm=T) ; sd(ClinicalTrialPats$SCOPA_scoretot[ClinicalTrialPats$DIAG==2], na.rm=T) # 17.08 , 9.85
+median(ClinicalTrialPats$SCOPA_scoretot[ClinicalTrialPats$DIAG==2], na.rm=T) ; quantile(ClinicalTrialPats$SCOPA_scoretot[ClinicalTrialPats$DIAG==2], na.rm=T) # 18, 10-24
+
+wilcox.test(
+  na.omit(ClinicalTrialPats$SCOPA_scoretot[ClinicalTrialPats$DIAG==1]), 
+  na.omit(ClinicalTrialPats$SCOPA_scoretot[ClinicalTrialPats$DIAG==2])
+) # 0.6779
+
+# ----------------------------------
 # Annual changes -------------------------------------------------
 
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
