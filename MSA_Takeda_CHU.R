@@ -1838,3 +1838,449 @@ summary(jointFit.p1)
 
 
 
+
+# Available patients per year all --------------------------------------------
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged$COMPASS_TOT
+
+length(unique(dataCohorteManaged$NUM)) #732
+
+dataCohorteManaged <- dataCohorteManaged %>% filter(NUM!="2MILEO1145"&NUM!="2DUJEA0242")
+
+length(unique(dataCohorteManaged$NUM)) #730
+
+
+
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  arrange(NUM, TIME_STUDY) %>%
+  group_by(NUM) %>%
+  #mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "months") ) %>%
+  mutate(TIME_STUDY=ifelse(is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year=ifelse(TIME_STUDY==0, 0,
+                     ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                            ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                   ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup() %>% select(NUM, Year) %>% distinct() %>% group_by(Year) %>% count()
+
+# Year     n
+# 1     0   730
+# 2     1   461
+# 3     2   317
+# 4     3   204
+# 5     4   199
+
+
+# Years 0, and 1
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  arrange(NUM, TIME_STUDY) %>%
+  group_by(NUM) %>%
+  #mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "months") ) %>%
+  mutate(TIME_STUDY=ifelse(is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year=ifelse(TIME_STUDY==0, 0,
+                     ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                            ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                   ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup()  %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0|Year==1) %>% group_by(NUM) %>% count() %>% filter(n==2) %>%
+  select(NUM) %>% distinct() # 461
+
+
+# Years 0, 1, and 2
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  arrange(NUM, TIME_STUDY) %>%
+  group_by(NUM) %>%
+  #mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "months") ) %>%
+  mutate(TIME_STUDY=ifelse(is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year=ifelse(TIME_STUDY==0, 0,
+                     ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                            ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                   ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup() %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0|Year==1|Year==2) %>% group_by(NUM) %>% count() %>% filter(n==3) %>%
+  select(NUM) %>% distinct() # 283
+
+
+
+# Years 0, 1, and 3
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  arrange(NUM, TIME_STUDY) %>%
+  group_by(NUM) %>%
+  #mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "months") ) %>%
+  mutate(TIME_STUDY=ifelse(is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year=ifelse(TIME_STUDY==0, 0,
+                     ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                            ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                   ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup() %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0|Year==1|Year==3) %>% group_by(NUM) %>% count() %>% filter(n==3) %>%
+  select(NUM) %>% distinct() # 181
+
+
+# Available patients early MSA per year all
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+dataCohorteManaged <- dataCohorteManaged %>% filter(NUM!="2MILEO1145"&NUM!="2DUJEA0242")
+
+ClinicalTrialPats <- fread("Source/ClinicalTrialPats.txt")
+
+dataCohorteManaged <- ClinicalTrialPats %>% inner_join(dataCohorteManaged)
+
+
+length(unique(dataCohorteManaged$NUM)) #338
+
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  arrange(NUM, TIME_STUDY) %>%
+  group_by(NUM) %>%
+  #mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "months") ) %>%
+  mutate(TIME_STUDY=ifelse(is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year=ifelse(TIME_STUDY==0, 0,
+                     ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                            ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                   ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup() %>% select(NUM, Year) %>% distinct() %>% group_by(Year) %>% count()
+
+# Year     n
+# 1     0   338
+# 2     1   233
+# 3     2   177
+# 4     3   129
+# 5     4   122
+
+
+# Years 0, and 1
+dataCohorteManaged %>% select(NUM, TIME_STUDY, ) %>%
+  arrange(NUM, TIME_STUDY) %>%
+  group_by(NUM) %>%
+  #mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "months") ) %>%
+  mutate(TIME_STUDY=ifelse(is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year=ifelse(TIME_STUDY==0, 0,
+                     ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                            ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                   ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup()  %>%  filter(!is.na(UMSARS)) %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0|Year==1) %>% group_by(NUM) %>% count() %>% filter(n==2) %>%
+  select(NUM) %>% distinct() # 233
+
+
+# Years 0, 1, and 2
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  arrange(NUM, TIME_STUDY) %>%
+  group_by(NUM) %>%
+  #mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "months") ) %>%
+  mutate(TIME_STUDY=ifelse(is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year=ifelse(TIME_STUDY==0, 0,
+                     ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                            ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                   ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup() %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0|Year==1|Year==2) %>% group_by(NUM) %>% count() %>% filter(n==3) %>%
+  select(NUM) %>% distinct() # 155
+
+
+
+# Years 0, 1, and 3
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  arrange(NUM, TIME_STUDY) %>%
+  group_by(NUM) %>%
+  #mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "months") ) %>%
+  mutate(TIME_STUDY=ifelse(is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year=ifelse(TIME_STUDY==0, 0,
+                     ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                            ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                   ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup() %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0|Year==1|Year==3) %>% group_by(NUM) %>% count() %>% filter(n==3) %>%
+  select(NUM) %>% distinct() # 112
+
+
+
+
+# Years 0, and 1
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  arrange(NUM, TIME_STUDY) %>%
+  group_by(NUM) %>%
+  #mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "months") ) %>%
+  mutate(TIME_STUDY=ifelse(is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year=ifelse(TIME_STUDY==0, 0,
+                     ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                            ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                   ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup()  %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0|Year==1) %>% group_by(NUM) %>% count() %>% filter(n==2) %>%
+  select(NUM) %>% left_join(First) %>% group_by(DIAGNIV) %>% count() 
+
+# DIAGNIV     n
+# 1       1    75
+# 2       2   158
+
+# Years 0, 1, and 2
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  arrange(NUM, TIME_STUDY) %>%
+  group_by(NUM) %>%
+  #mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "months") ) %>%
+  mutate(TIME_STUDY=ifelse(is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year=ifelse(TIME_STUDY==0, 0,
+                     ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                            ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                   ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup() %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0|Year==1|Year==2) %>% group_by(NUM) %>% count() %>% filter(n==3) %>%
+  select(NUM) %>% left_join(First) %>% group_by(DIAGNIV) %>% count() 
+
+# DIAGNIV     n
+# 1       1    51
+# 2       2   104
+
+# Years 0, 1, and 3
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  arrange(NUM, TIME_STUDY) %>%
+  group_by(NUM) %>%
+  #mutate(elapsed =  time_length(difftime(DATECONSULT, lag(DATECONSULT)), "months") ) %>%
+  mutate(TIME_STUDY=ifelse(is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year=ifelse(TIME_STUDY==0, 0,
+                     ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                            ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                   ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup() %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0|Year==1|Year==3) %>% group_by(NUM) %>% count() %>% filter(n==3) %>%
+  select(NUM) %>% left_join(First) %>% group_by(DIAGNIV) %>% count() 
+
+
+
+
+#
+# ---------
+# Short Yellow table overall numbers  -------------------
+
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+dataCohorteManaged <- dataCohorteManaged %>% filter(NUM!="2MILEO1145"&NUM!="2DUJEA0242")
+
+length(unique(dataCohorteManaged$NUM)) #730
+
+ClinicalTrialPats <- fread("Source/ClinicalTrialPats.txt")
+ClinicalTrialPats <- ClinicalTrialPats %>% filter(NUM!="2MILEO1145"&NUM!="2DUJEA0242")
+
+length(unique(ClinicalTrialPats$NUM)) #337
+
+# Years 0 & 1
+
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  # inner_join(ClinicalTrialPats) %>%   # If early MSA Pop
+  arrange(NUM, TIME_STUDY) %>% group_by(NUM) %>%
+  mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup()  %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0 | Year==1) %>% group_by(NUM) %>% count() %>% filter(n==2) %>%
+  select(NUM) %>% distinct() # 461 , early 233
+
+
+dataCohorteManaged %>% # filter(!is.na(UMSARS4) & !is.na(UMSARS1_TOT) & !is.na(UMSARS1_11) & 
+  #        !is.na(UMSARS1_2) & !is.na(UMSARS1_7) & !is.na(UMSARS1_8) ) %>%
+  filter(!is.na(UMSARS4) & !is.na(UMSARS1_TOT) & !is.na(UMSARS2_TOT)) %>%
+  select(NUM, TIME_STUDY)  %>% 
+  inner_join(ClinicalTrialPats) %>%   # If early MSA Pop
+  arrange(NUM, TIME_STUDY) %>% group_by(NUM) %>%
+  mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup()  %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0 ) %>% group_by(NUM) %>% count() %>% filter(n==1) %>%
+  select(NUM) %>% distinct() # 688  337
+
+
+dataCohorteManaged %>% 
+  filter(!is.na(UMSARS4) & !is.na(UMSARS1_TOT) & !is.na(UMSARS2_TOT)) %>%
+  select(NUM, TIME_STUDY)  %>% 
+  inner_join(ClinicalTrialPats) %>%   # If early MSA Pop
+  arrange(NUM, TIME_STUDY) %>% group_by(NUM) %>%
+  mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup()  %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0  | Year==1) %>% group_by(NUM) %>% count() %>% filter(n==2) %>%
+  select(NUM) %>% distinct() # 425  #224
+
+
+
+dataCohorteManaged %>% left_join(ClinicalTrialPats %>% mutate(EarlyCT="Yes")) %>%
+  select(NUM, DATE_VISITE0, EarlyCT) %>% distinct() %>%
+  mutate(EarlyCT=ifelse(is.na(EarlyCT), "No", EarlyCT)) %>%
+  ggplot(aes(DATE_VISITE0, colour=EarlyCT, fill=EarlyCT)) + 
+  #geom_histogram(alpha=0.8, position = "dodge") +
+  geom_density(alpha=0.6) +
+  theme_minimal() + xlab("\n Initial Visit Date") + ylab("Gaussian smoothing \n patient density \n") +
+  scale_fill_manual(values = c("#343a40", "#17a2b8")) +
+  scale_colour_manual(values = c("#343a40", "#17a2b8")) 
+
+
+EarlyCT mean      
+1 No      2015-12-09
+2 Yes     2015-10-06
+
+EarlyCT mean      
+1 No      2016-01-20
+2 Yes     2016-02-10
+
+
+
+dataCohorteManaged %>% left_join(ClinicalTrialPats %>% mutate(EarlyCT="Yes")) %>%
+  select(NUM, DATE_DERVISITE, EarlyCT) %>% distinct() %>%
+  mutate(EarlyCT=ifelse(is.na(EarlyCT), "No", EarlyCT)) %>%
+  ggplot(aes(DATE_DERVISITE, colour=EarlyCT, fill=EarlyCT)) + 
+  #geom_histogram(alpha=0.8, position = "dodge") +
+  geom_density(alpha=0.6) +
+  theme_minimal() + xlab("\n Last Visit Date") + ylab("Gaussian smoothing \n patient density \n") +
+  scale_fill_manual(values = c("#343a40", "#17a2b8")) +
+  scale_colour_manual(values = c("#343a40", "#17a2b8")) 
+
+
+
+
+
+dataCohorteManaged %>% left_join(ClinicalTrialPats %>% mutate(EarlyCT="Yes")) %>%
+  select(NUM, DATE_VISITE0, DATE_DERVISITE, EarlyCT) %>% distinct() %>%
+  mutate(EarlyCT=ifelse(is.na(EarlyCT), "No", EarlyCT)) %>%
+  mutate(elapsed=(DATE_DERVISITE-DATE_VISITE0)/365.5) %>%
+    ggplot(aes(elapsed, colour=EarlyCT, fill=EarlyCT)) + 
+  #geom_histogram(alpha=0.8, position = "dodge") +
+  geom_density(alpha=0.6) +
+  theme_minimal() + xlab("\n Number of years elapsed from 1st to last Visit") + 
+  ylab("Gaussian smoothing \n patient density \n") +
+  scale_fill_manual(values = c("#343a40", "#17a2b8")) +
+  scale_colour_manual(values = c("#343a40", "#17a2b8")) 
+
+
+
+
+# -----------------------------
+
+# Short Yellow table overall numbers V2 removing SympathIDs  -------------------
+sympathIds <- readRDS("Source/sympathIds.rds")
+
+sympathIds <- sympathIds %>% filter(randomisation %in% c("PD03", "PD01")) %>% 
+  select(NUM) %>% distinct() %>% drop_na()
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+dataCohorteManaged <- dataCohorteManaged %>% filter(NUM!="2MILEO1145"&NUM!="2DUJEA0242")
+
+length(unique(dataCohorteManaged$NUM)) #730
+
+ClinicalTrialPats <- fread("Source/ClinicalTrialPats.txt")
+ClinicalTrialPats <- ClinicalTrialPats %>% filter(NUM!="2MILEO1145"&NUM!="2DUJEA0242")
+
+length(unique(ClinicalTrialPats$NUM)) #337
+
+dataCohorteManaged <- dataCohorteManaged %>% anti_join(sympathIds)
+ClinicalTrialPats <- ClinicalTrialPats %>% anti_join(sympathIds)
+
+length(unique(dataCohorteManaged$NUM)) #712
+length(unique(ClinicalTrialPats$NUM)) #320
+
+
+# Years 0 & 1
+
+dataCohorteManaged %>% select(NUM, TIME_STUDY) %>%
+  inner_join(ClinicalTrialPats) %>%   # If early MSA Pop
+  arrange(NUM, TIME_STUDY) %>% group_by(NUM) %>%
+  mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup()  %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0 | Year==1) %>% group_by(NUM) %>% count() %>% filter(n==2) %>%
+  select(NUM) %>% distinct() # 445 , early 218
+
+dataCohorteManaged %>% # filter(!is.na(UMSARS4) & !is.na(UMSARS1_TOT) & !is.na(UMSARS1_11) & 
+  #        !is.na(UMSARS1_2) & !is.na(UMSARS1_7) & !is.na(UMSARS1_8) ) %>%
+  filter(!is.na(UMSARS4) & !is.na(UMSARS1_TOT) & !is.na(UMSARS2_TOT)) %>%
+  select(NUM, TIME_STUDY)  %>% 
+  # inner_join(ClinicalTrialPats) %>%   # If early MSA Pop
+  arrange(NUM, TIME_STUDY) %>% group_by(NUM) %>%
+  mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup()  %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0 ) %>% group_by(NUM) %>% count() %>% filter(n==1) %>%
+  select(NUM) %>% distinct() # 671  319
+
+
+dataCohorteManaged %>% 
+  filter(!is.na(UMSARS4) & !is.na(UMSARS1_TOT) & !is.na(UMSARS2_TOT)) %>%
+  select(NUM, TIME_STUDY)  %>% 
+  # inner_join(ClinicalTrialPats) %>%   # If early MSA Pop
+  arrange(NUM, TIME_STUDY) %>% group_by(NUM) %>%
+  mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 & TIME_STUDY<3.5,3, 4))))) %>%
+  ungroup()  %>% select(NUM, Year) %>% distinct() %>%
+  filter(Year==0  | Year==1) %>% group_by(NUM) %>% count() %>% filter(n==2) %>%
+  select(NUM) %>% distinct() # 410  #208
+
+
+
+
+dataCohorteManaged %>% left_join(ClinicalTrialPats %>% mutate(EarlyCT="Yes")) %>%
+  select(NUM, DATE_VISITE0, EarlyCT) %>% distinct() %>%
+  mutate(EarlyCT=ifelse(is.na(EarlyCT), "No", EarlyCT)) %>%
+  ggplot(aes(DATE_VISITE0, colour=EarlyCT, fill=EarlyCT)) + 
+  #geom_histogram(alpha=0.8, position = "dodge") +
+  geom_density(alpha=0.6) +
+  theme_minimal() + xlab("\n Initial Visit Date") + ylab("Gaussian smoothing \n patient density \n") +
+  scale_fill_manual(values = c("#343a40", "#17a2b8")) +
+  scale_colour_manual(values = c("#343a40", "#17a2b8")) 
+
+
+EarlyCT mean      
+1 No      2015-12-09
+2 Yes     2015-10-06
+
+EarlyCT mean      
+1 No      2016-01-20
+2 Yes     2016-02-10
+
+
+
+dataCohorteManaged %>% left_join(ClinicalTrialPats %>% mutate(EarlyCT="Yes")) %>%
+  select(NUM, DATE_DERVISITE, EarlyCT) %>% distinct() %>%
+  mutate(EarlyCT=ifelse(is.na(EarlyCT), "No", EarlyCT)) %>%
+  ggplot(aes(DATE_DERVISITE, colour=EarlyCT, fill=EarlyCT)) + 
+  #geom_histogram(alpha=0.8, position = "dodge") +
+  geom_density(alpha=0.6) +
+  theme_minimal() + xlab("\n Last Visit Date") + ylab("Gaussian smoothing \n patient density \n") +
+  scale_fill_manual(values = c("#343a40", "#17a2b8")) +
+  scale_colour_manual(values = c("#343a40", "#17a2b8")) 
+
+
+
+
+
+dataCohorteManaged %>% left_join(ClinicalTrialPats %>% mutate(EarlyCT="Yes")) %>%
+  select(NUM, DATE_VISITE0, DATE_DERVISITE, EarlyCT) %>% distinct() %>%
+  mutate(EarlyCT=ifelse(is.na(EarlyCT), "No", EarlyCT)) %>%
+  mutate(elapsed=(DATE_DERVISITE-DATE_VISITE0)/365.5) %>%
+  ggplot(aes(elapsed, colour=EarlyCT, fill=EarlyCT)) + 
+  #geom_histogram(alpha=0.8, position = "dodge") +
+  geom_density(alpha=0.6) +
+  theme_minimal() + xlab("\n Number of years elapsed from 1st to last Visit") + 
+  ylab("Gaussian smoothing \n patient density \n") +
+  scale_fill_manual(values = c("#343a40", "#17a2b8")) +
+  scale_colour_manual(values = c("#343a40", "#17a2b8")) 
+
+
+
+
+# ----------------------------
+
