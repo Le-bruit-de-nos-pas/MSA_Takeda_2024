@@ -1,5 +1,8 @@
 # Define Populations: ALL MSA / EarlyCT, MSA-C / MSA-P, Prob / Poss, 0, +1, +2, +3 ---------
 
+library(tidyverse)
+library(data.table)
+
 sympathIds <- readRDS("Source/sympathIds.rds")
 
 sympathIds <- sympathIds %>% filter(randomisation %in% c("PD03", "PD01")) %>% select(NUM) %>% distinct() %>% drop_na()
@@ -17,8 +20,8 @@ length(unique(ClinicalTrialPats$NUM)) #337
 dataCohorteManaged <- dataCohorteManaged %>% anti_join(sympathIds)
 ClinicalTrialPats <- ClinicalTrialPats %>% anti_join(sympathIds)
 
-length(unique(dataCohorteManaged$NUM)) #712
-length(unique(ClinicalTrialPats$NUM)) #320
+length(unique(dataCohorteManaged$NUM)) # 712
+length(unique(ClinicalTrialPats$NUM)) # 320 
 
 
 
@@ -171,5 +174,53 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 <- dataCohorteManaged %>%
   select(NUM) %>% distinct() # 99  
 
 fwrite(EarlyCT_Pop_BaselineYear1Year2Year3Plus_99, "Source/EarlyCT_Pop_BaselineYear1Year2Year3Plus_99.txt")
+
+
+AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
+AllMSA_Pop_BaselineYear1_410 <- fread("Source/AllMSA_Pop_BaselineYear1_410.txt")
+AllMSA_Pop_BaselineYear1Year2_245 <- fread("Source/AllMSA_Pop_BaselineYear1Year2_245.txt")
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 <- fread("Source/AllMSA_Pop_BaselineYear1Year2Year3Plus_158.txt")
+
+EarlyCT_Pop_Baseline_319 <- fread("Source/EarlyCT_Pop_Baseline_319.txt")
+EarlyCT_Pop_BaselineYear1_208 <- fread("Source/EarlyCT_Pop_BaselineYear1_208.txt")
+EarlyCT_Pop_BaselineYear1Year2_134 <- fread("Source/EarlyCT_Pop_BaselineYear1Year2_134.txt")
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 <- fread( "Source/EarlyCT_Pop_BaselineYear1Year2Year3Plus_99.txt")
+
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+DIAG_groups <- dataCohorteManaged %>% group_by(NUM) %>% 
+  filter(DATECONSULT==min(DATECONSULT)) %>%
+  select(NUM, DIAG, DIAGNIV) 
+
+DIAG_groups <- DIAG_groups %>% mutate(DIAGNIV = ifelse(is.na(DIAGNIV), 1, DIAGNIV)) 
+DIAG_groups <- DIAG_groups %>% mutate(DIAGNIV = ifelse(DIAGNIV==1, "POS", "PROB")) 
+DIAG_groups <- DIAG_groups %>% mutate(DIAG = ifelse(DIAG==1, "PD", "CB")) 
+
+
+AllMSA_Pop_Baseline_671 <- AllMSA_Pop_Baseline_671 %>% left_join(DIAG_groups)
+AllMSA_Pop_BaselineYear1_410 <- AllMSA_Pop_BaselineYear1_410 %>% left_join(DIAG_groups)
+AllMSA_Pop_BaselineYear1Year2_245 <- AllMSA_Pop_BaselineYear1Year2_245 %>% left_join(DIAG_groups)
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 <- AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% left_join(DIAG_groups)
+
+EarlyCT_Pop_Baseline_319 <- EarlyCT_Pop_Baseline_319 %>% left_join(DIAG_groups)
+EarlyCT_Pop_BaselineYear1_208 <- EarlyCT_Pop_BaselineYear1_208 %>% left_join(DIAG_groups)
+EarlyCT_Pop_BaselineYear1Year2_134 <- EarlyCT_Pop_BaselineYear1Year2_134 %>% left_join(DIAG_groups)
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 <- EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% left_join(DIAG_groups)
+
+
+fwrite(AllMSA_Pop_Baseline_671, "Source/AllMSA_Pop_Baseline_671.txt")
+fwrite(AllMSA_Pop_BaselineYear1_410, "Source/AllMSA_Pop_BaselineYear1_410.txt")
+fwrite(AllMSA_Pop_BaselineYear1Year2_245, "Source/AllMSA_Pop_BaselineYear1Year2_245.txt")
+fwrite(AllMSA_Pop_BaselineYear1Year2Year3Plus_158, "Source/AllMSA_Pop_BaselineYear1Year2Year3Plus_158.txt")
+
+fwrite(EarlyCT_Pop_Baseline_319, "Source/EarlyCT_Pop_Baseline_319.txt")
+fwrite(EarlyCT_Pop_BaselineYear1_208, "Source/EarlyCT_Pop_BaselineYear1_208.txt")
+fwrite(EarlyCT_Pop_BaselineYear1Year2_134, "Source/EarlyCT_Pop_BaselineYear1Year2_134.txt")
+fwrite(EarlyCT_Pop_BaselineYear1Year2Year3Plus_99, "Source/EarlyCT_Pop_BaselineYear1Year2Year3Plus_99.txt")
+
+
+
+
 
 # ---------------------------------
