@@ -319,3 +319,172 @@ AllMSA_Pop_Baseline_671 %>% inner_join(UMSARS4) %>% filter(Year==0 & TIME_STUDY=
     sd=sd(UMSARS4),
     n=n()
   )
+# How many with SHRAG MSA QoL  ? ---------------------------
+
+
+SCHRAG <- dataCohorteManaged %>% 
+  select(NUM, DATECONSULT, TIME_STUDY, Year, SCHRAG_1:SCHRAG_40, SCHRAG_TOT)
+
+SCHRAG$missing_na <- rowSums(is.na(SCHRAG[, 5:44]))
+
+SCHRAG <- SCHRAG %>% filter(missing_na<=10)
+
+SCHRAG$SCHRAG_TOT_v2 <- rowSums(SCHRAG[, 5:44], na.rm = TRUE)
+
+SCHRAG <- SCHRAG %>% select(NUM, DATECONSULT, TIME_STUDY, Year, SCHRAG_TOT_v2)
+
+# ----------------------
+
+# All MSA -----------------------
+
+
+AllMSA_Pop_Baseline_671 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() # 421
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0|Year==1) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup()  %>%
+  group_by(NUM) %>% count() %>% filter(n==2) # 258
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0|Year==1|Year==2) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup()  %>%
+  group_by(NUM) %>% count() %>% filter(n==3) # 152
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0|Year==1|Year==2|Year==3) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup()  %>%
+  group_by(NUM) %>% count() %>% filter(n==4) # 91
+
+
+# --------------------------------
+
+# EarlyCT  -----------------------------
+
+
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup()  %>%
+  group_by(NUM) %>% count() %>% filter(n==1) %>% # 211
+  left_join(EarlyCT_Pop_Baseline_319) %>%
+  group_by(DIAGNIV) %>% count() 
+
+# 1 POS        61
+# 2 PROB      150
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0|Year==1) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup()  %>%
+  group_by(NUM) %>% count() %>% filter(n==2) %>% # 133
+  left_join(EarlyCT_Pop_BaselineYear1_208) %>%
+  group_by(DIAGNIV) %>% count() 
+
+# 1 POS        43
+# 2 PROB       90
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0|Year==1|Year==2) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup()  %>%
+  group_by(NUM) %>% count() %>% filter(n==3) %>% # 87
+  left_join(EarlyCT_Pop_BaselineYear1Year2_134) %>%
+  group_by(DIAGNIV) %>% count() 
+
+# 1 POS        26
+# 2 PROB       61
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0|Year==1|Year==2|Year==3) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup()  %>%
+  group_by(NUM) %>% count() %>% filter(n==4) %>% # 59
+  left_join(EarlyCT_Pop_BaselineYear1Year2Year3Plus_99) %>%
+  group_by(DIAGNIV) %>% count() 
+
+# 1 POS        19
+# 2 PROB       40
+
+
+
+# ----------------------------------------
+
+
+
+
+
+
+
+
+
+# OTHER -----------------------------
+
+
+
+
+
+
+
+
+
+
+# UMSARS 1 
+
+UMSARS1_TOT <- dataCohorteManaged %>% select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_TOT)
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1_TOT) %>% filter(Year==1) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% filter(!is.na(UMSARS1_TOT)) %>%
+  group_by(NUM) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS1_TOT),
+    sd=sd(UMSARS1_TOT),
+    n=n()
+  )
+
+
+UMSARS2_TOT <- dataCohorteManaged %>% select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS2_TOT)
+
+AllMSA_Pop_Baseline_671 %>% inner_join(UMSARS2_TOT) %>% filter(Year==0 & TIME_STUDY==0) %>%
+  group_by(NUM) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS2_TOT),
+    sd=sd(UMSARS2_TOT),
+    n=n()
+  )
+
+
+UMSARS4 <- dataCohorteManaged %>% select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS4)
+
+AllMSA_Pop_Baseline_671 %>% inner_join(UMSARS4) %>% filter(Year==0 & TIME_STUDY==0) %>%
+  group_by(NUM) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS4),
+    sd=sd(UMSARS4),
+    n=n()
+  )
