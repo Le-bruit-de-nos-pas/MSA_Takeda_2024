@@ -1962,6 +1962,7 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
   ) %>% 
   group_by(DIAGNIV) %>% summarise(mean= mean((UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)) 
 
+
 AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
   filter(!is.na(UMSARS1_TOT_FDA)) %>%
   mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
@@ -2647,6 +2648,8 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
   ) %>% 
   group_by(DIAGNIV) %>% summarise(mean= mean((UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)) 
 
+
+
 EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
   filter(!is.na(UMSARS1_TOT_FDA)) %>%
   mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
@@ -2715,6 +2718,7 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %
       group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
   ) %>% 
   group_by(DIAGNIV) %>% summarise(mean= mean((UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)) 
+
 
 
 EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
