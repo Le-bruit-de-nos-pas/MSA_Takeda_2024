@@ -71435,3 +71435,4997 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS4) %>% filter(Ye
 
 # -----------------------------
 
+
+# Inputs UMSARS 1+2 9-item Total ----------------------------------
+
+AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
+AllMSA_Pop_BaselineYear1_410 <- fread("Source/AllMSA_Pop_BaselineYear1_410.txt")
+AllMSA_Pop_BaselineYear1Year2_245 <- fread("Source/AllMSA_Pop_BaselineYear1Year2_245.txt")
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 <- fread("Source/AllMSA_Pop_BaselineYear1Year2Year3Plus_158.txt")
+
+EarlyCT_Pop_Baseline_319 <- fread("Source/EarlyCT_Pop_Baseline_319.txt")
+EarlyCT_Pop_BaselineYear1_208 <- fread("Source/EarlyCT_Pop_BaselineYear1_208.txt")
+EarlyCT_Pop_BaselineYear1Year2_134 <- fread("Source/EarlyCT_Pop_BaselineYear1Year2_134.txt")
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 <- fread( "Source/EarlyCT_Pop_BaselineYear1Year2Year3Plus_99.txt")
+
+# UMSARS 1 Total Score 
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
+
+UMSARS1 <- dataCohorteManaged %>% 
+  mutate(UMSARS_9item = UMSARS1_1 + UMSARS1_4 + UMSARS1_5 + UMSARS1_6 + UMSARS1_7 + UMSARS1_10 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14) %>%
+  mutate(UMSARS_11item = UMSARS1_2 + UMSARS1_3 + UMSARS1_6 + UMSARS1_7 + UMSARS1_11 + UMSARS2_1 + UMSARS2_2 + UMSARS2_9 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14 ) %>% 
+  select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS_9item)
+
+# ----------------
+# Overall MSA Entire -------------------------------
+
+# ALL UMSARS Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# --------------
+
+
+# By MSA P vs MSA C -----------------
+# ALL UMSARS Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  group_by(DIAG) %>% summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  group_by(DIAG) %>% summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% group_by(DIAG) %>%
+  summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ------------
+# By Possible vs probable --------------------
+
+# ALL UMSARS Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+# Change from baseline
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  group_by(DIAGNIV) %>% summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  group_by(DIAGNIV) %>% summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% group_by(DIAGNIV) %>%
+  summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# -----------------------------
+# Overall Early CT  -------------------------------
+
+# ALL UMSARS Total Year 0 
+
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# --------------
+
+
+# By MSA P vs MSA C -----------------
+# ALL UMSARS Total Year 0 
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  group_by(DIAG) %>% summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  group_by(DIAG) %>% summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% group_by(DIAG) %>%
+  summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ------------
+# By Possible vs probable --------------------
+
+# ALL UMSARS Total Year 0 
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+# Change from baseline
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  group_by(DIAGNIV) %>% summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  group_by(DIAGNIV) %>% summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_9item),
+    sd=sd(UMSARS_9item),
+    median=median(UMSARS_9item),
+    Q1 = quantile(UMSARS_9item, 0.25),
+    Q3 = quantile(UMSARS_9item, 0.75),
+    min=min(UMSARS_9item),
+    max=max(UMSARS_9item),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% group_by(DIAGNIV) %>%
+  summarise(mean= mean((UMSARS_9item-Baseline)/TIME_STUDY)) 
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_9item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_9item) %>%
+  rename("Baseline"="UMSARS_9item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_9item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_9item)
+  ) %>% 
+  mutate(Diff= (UMSARS_9item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# -----------------------------
+
+
+# Inputs UMSARS 1+2 11-item Total ----------------------------------
+
+AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
+AllMSA_Pop_BaselineYear1_410 <- fread("Source/AllMSA_Pop_BaselineYear1_410.txt")
+AllMSA_Pop_BaselineYear1Year2_245 <- fread("Source/AllMSA_Pop_BaselineYear1Year2_245.txt")
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 <- fread("Source/AllMSA_Pop_BaselineYear1Year2Year3Plus_158.txt")
+
+EarlyCT_Pop_Baseline_319 <- fread("Source/EarlyCT_Pop_Baseline_319.txt")
+EarlyCT_Pop_BaselineYear1_208 <- fread("Source/EarlyCT_Pop_BaselineYear1_208.txt")
+EarlyCT_Pop_BaselineYear1Year2_134 <- fread("Source/EarlyCT_Pop_BaselineYear1Year2_134.txt")
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 <- fread( "Source/EarlyCT_Pop_BaselineYear1Year2Year3Plus_99.txt")
+
+# UMSARS 1 Total Score 
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
+
+UMSARS1 <- dataCohorteManaged %>% 
+  mutate(UMSARS_9item = UMSARS1_1 + UMSARS1_4 + UMSARS1_5 + UMSARS1_6 + UMSARS1_7 + UMSARS1_10 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14) %>%
+  mutate(UMSARS_11item = UMSARS1_2 + UMSARS1_3 + UMSARS1_6 + UMSARS1_7 + UMSARS1_11 + UMSARS2_1 + UMSARS2_2 + UMSARS2_9 + UMSARS2_11 + UMSARS2_12 + UMSARS2_14 ) %>% 
+  select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS_11item)
+
+# ----------------
+# Overall MSA Entire -------------------------------
+
+# ALL UMSARS Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# --------------
+
+
+# By MSA P vs MSA C -----------------
+# ALL UMSARS Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  group_by(DIAG) %>% summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  group_by(DIAG) %>% summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% group_by(DIAG) %>%
+  summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ------------
+# By Possible vs probable --------------------
+
+# ALL UMSARS Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+# Change from baseline
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  group_by(DIAGNIV) %>% summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  group_by(DIAGNIV) %>% summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% group_by(DIAGNIV) %>%
+  summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# -----------------------------
+# Overall Early CT  -------------------------------
+
+# ALL UMSARS Total Year 0 
+
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# --------------
+
+
+# By MSA P vs MSA C -----------------
+# ALL UMSARS Total Year 0 
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  group_by(DIAG) %>% summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  group_by(DIAG) %>% summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% group_by(DIAG) %>%
+  summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ------------
+# By Possible vs probable --------------------
+
+# ALL UMSARS Total Year 0 
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+# Change from baseline
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  group_by(DIAGNIV) %>% summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL UMSARS Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  group_by(DIAGNIV) %>% summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL UMSARS Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(UMSARS_11item),
+    sd=sd(UMSARS_11item),
+    median=median(UMSARS_11item),
+    Q1 = quantile(UMSARS_11item, 0.25),
+    Q3 = quantile(UMSARS_11item, 0.75),
+    min=min(UMSARS_11item),
+    max=max(UMSARS_11item),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% group_by(DIAGNIV) %>%
+  summarise(mean= mean((UMSARS_11item-Baseline)/TIME_STUDY)) 
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline))  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS_11item)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS_11item) %>%
+  rename("Baseline"="UMSARS_11item") %>%
+  left_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS_11item)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS_11item)
+  ) %>% 
+  mutate(Diff= (UMSARS_11item-Baseline)/TIME_STUDY)  %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# -----------------------------
+
