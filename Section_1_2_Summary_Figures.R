@@ -1,4 +1,8 @@
 # Summary Plots --------------------
+
+library(tidyverse)
+library(data.table)
+options(scipen = 999)
 # ---------------
 # Inputs UMSARS 1 Total ----------------------------------
 
@@ -32,6 +36,11 @@ UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
 
 UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT)
+
+
+
+
+
 
 # ----------------
 # Overall MSA Entire -------------------------------
@@ -198,6 +207,99 @@ plot  %>%
   scale_y_continuous(breaks = seq(0, 55, by = 5))
 
 
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
 # -------------------
 # Overall Early CT  -------------------------------
 
@@ -360,6 +462,103 @@ plot  %>%
         axis.title.y = element_text(size = 12, vjust = -0.5),
         plot.margin = margin(5, 5, 5, 5, "pt")) +
   scale_y_continuous(breaks = seq(0, 55, by = 5))
+
+
+
+
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
 
 
 # -------------------
@@ -581,6 +780,102 @@ plot  %>%
   scale_y_continuous(breaks = seq(0, 55, by = 5))
 
 
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT_FDA, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 FAD-modified Collapsed \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT_FDA, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 FAD-modified Collapsed \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT_FDA, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 FAD-modified Collapsed \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+
 # -------------------
 # Overall Early CT  -------------------------------
 
@@ -743,6 +1038,108 @@ plot  %>%
         axis.title.y = element_text(size = 12, vjust = -0.5),
         plot.margin = margin(5, 5, 5, 5, "pt")) +
   scale_y_continuous(breaks = seq(0, 55, by = 5))
+
+
+
+
+
+
+
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT_FDA, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 FAD-modified Collapsed \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT_FDA, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 FAD-modified Collapsed \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1_TOT_FDA, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 FAD-modified Collapsed \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
 
 
 # -------------------
@@ -943,6 +1340,107 @@ plot  %>%
   scale_y_continuous(breaks = seq(0, 55, by = 5))
 
 
+
+
+
+
+
+
+
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS2 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS2_TOT, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+UMSARS2 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS2_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS2 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS2_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
 # -------------------
 # Overall Early CT  -------------------------------
 
@@ -1105,6 +1603,104 @@ plot  %>%
         axis.title.y = element_text(size = 12, vjust = -0.5),
         plot.margin = margin(5, 5, 5, 5, "pt")) +
   scale_y_continuous(breaks = seq(0, 55, by = 5))
+
+
+
+
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS2 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS2_TOT, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+UMSARS2 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS2_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS2 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS2_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
 
 # ---------
 # Inputs UMSARS 1+2 9-item Total ----------------------------------
@@ -1301,6 +1897,102 @@ plot  %>%
   scale_y_continuous(breaks = seq(0, 55, by = 5))
 
 
+
+
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_9item, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_9item, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_9item, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
 # -------------------
 # Overall Early CT  -------------------------------
 
@@ -1463,6 +2155,104 @@ plot  %>%
         axis.title.y = element_text(size = 12, vjust = -0.5),
         plot.margin = margin(5, 5, 5, 5, "pt")) +
   scale_y_continuous(breaks = seq(0, 55, by = 5))
+
+
+
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_9item, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_9item, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_9item, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
 
 # ---------
 # Inputs UMSARS 1+2 11-item Total ----------------------------------
@@ -1658,6 +2448,99 @@ plot  %>%
   scale_y_continuous(breaks = seq(0, 55, by = 5))
 
 
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_11item, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_11item, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS1 %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_11item, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
 # -------------------
 # Overall Early CT  -------------------------------
 
@@ -1820,5 +2703,99 @@ plot  %>%
         axis.title.y = element_text(size = 12, vjust = -0.5),
         plot.margin = margin(5, 5, 5, 5, "pt")) +
   scale_y_continuous(breaks = seq(0, 55, by = 5))
+
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_11item, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_11item, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS1 %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS_11item, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("9-item UMSARS 1+2 \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
 
 # ---------
