@@ -29655,3 +29655,2514 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Yea
 
 # -----------------------------
 
+
+# Inputs Emotional MSA QoL   ----------------------------------
+
+AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
+AllMSA_Pop_BaselineYear1_410 <- fread("Source/AllMSA_Pop_BaselineYear1_410.txt")
+AllMSA_Pop_BaselineYear1Year2_245 <- fread("Source/AllMSA_Pop_BaselineYear1Year2_245.txt")
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 <- fread("Source/AllMSA_Pop_BaselineYear1Year2Year3Plus_158.txt")
+
+EarlyCT_Pop_Baseline_319 <- fread("Source/EarlyCT_Pop_Baseline_319.txt")
+EarlyCT_Pop_BaselineYear1_208 <- fread("Source/EarlyCT_Pop_BaselineYear1_208.txt")
+EarlyCT_Pop_BaselineYear1Year2_134 <- fread("Source/EarlyCT_Pop_BaselineYear1Year2_134.txt")
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 <- fread( "Source/EarlyCT_Pop_BaselineYear1Year2Year3Plus_99.txt")
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
+
+SCHRAG <- dataCohorteManaged %>% 
+  select(NUM, DATECONSULT, TIME_STUDY, Year, SCHRAG_1:SCHRAG_40, SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL, ECHANQV)
+
+SCHRAG %>% select(SCHRAG_TOT, SCHRAG_NONMOTOR, SCHRAG_MOTOR, SCHRAG_EMOTIONAL, ECHANQV)
+
+names(SCHRAG)
+
+SCHRAG$SCHRAG_TOT_v2 <- rowSums(SCHRAG[, 5:44], na.rm = TRUE)
+
+SCHRAG %>% select(SCHRAG_TOT_v2, SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL, ECHANQV) %>% 
+  mutate(SCHRAG_TOT=ifelse(is.na(SCHRAG_TOT),0,SCHRAG_TOT)) %>% ungroup() %>%
+  filter(SCHRAG_TOT  !=0) %>% summarise(SCHRAG_TOT =mean(SCHRAG_TOT , na.rm=T))
+
+
+SCHRAG %>% select(SCHRAG_TOT_v2, SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL, ECHANQV) %>%
+  mutate(SCHRAG_TOT=ifelse(is.na(SCHRAG_TOT),0,SCHRAG_TOT)) %>% ungroup() %>%
+  mutate(SCHRAG_TOT=ifelse(SCHRAG_TOT==0, SCHRAG_TOT_v2, SCHRAG_TOT)) %>%
+  select(-SCHRAG_TOT_v2) %>% filter(!is.na(SCHRAG_TOT) & is.na(SCHRAG_NONMOTOR))
+
+
+SCHRAG$SCHRAG_TOT_v2 <- rowSums(SCHRAG[, 5:44], na.rm = TRUE)
+SCHRAG$SCHRAG_EMOTIONAL_v2 <- rowSums(SCHRAG[, 5:18], na.rm = TRUE)
+SCHRAG$SCHRAG_EMOTIONAL_v2 <- rowSums(SCHRAG[, 19:30], na.rm = TRUE)
+SCHRAG$SCHRAG_EMOTIONAL_v2 <- rowSums(SCHRAG[, 31:44], na.rm = TRUE)
+
+SCHRAG <- SCHRAG %>% select(-c(SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL))
+
+#SCHRAG <- SCHRAG %>% select(NUM, DATECONSULT, TIME_STUDY, Year, SCHRAG_TOT_v2, SCHRAG_EMOTIONAL_v2, SCHRAG_EMOTIONAL_v2, SCHRAG_EMOTIONAL_v2, ECHANQV)
+SCHRAG <- SCHRAG %>% filter(SCHRAG_TOT_v2!=0)
+
+range(SCHRAG$SCHRAG_TOT_v2)
+
+names(SCHRAG)
+
+SCHRAG$all_na <- rowSums(is.na(SCHRAG[, 5:44])) == (44 - 5 + 1)
+
+SCHRAG$number_na <- rowSums(is.na(SCHRAG[, 5:44])) 
+
+SCHRAG <- SCHRAG %>% filter(!(all_na) )
+
+names(SCHRAG)
+
+range(SCHRAG$number_na)
+
+SCHRAG %>% ggplot(aes(number_na)) + geom_histogram()
+
+mean(SCHRAG$number_na)
+
+SCHRAG_Baseline_Pats <- SCHRAG %>% filter(Year==0) %>% filter(!is.na(SCHRAG_TOT_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM) %>% distinct() %>%
+  inner_join(AllMSA_Pop_Baseline_671)
+
+names(SCHRAG)
+
+# ----------------
+# Overall MSA Entire -------------------------------
+
+# ALL SCHRAG Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(SCHRAG) %>% filter(Year==0) %>% 
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+# ALL SCHRAG Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% 
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  mutate(Diff= TIME_STUDY*12) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL SCHRAG Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>% 
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  mutate(Diff= TIME_STUDY*12) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL SCHRAG Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# --------------
+
+
+# By MSA P vs MSA C -----------------
+# ALL SCHRAG Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+
+# ALL SCHRAG Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>% summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL SCHRAG Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>% summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  mutate(Diff= TIME_STUDY*12) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL SCHRAG Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% group_by(DIAG) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ------------
+# By Possible vs probable --------------------
+
+# ALL SCHRAG Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+
+# ALL SCHRAG Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+# Change from baseline
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>% summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL SCHRAG Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>% summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL SCHRAG Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% group_by(DIAGNIV) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# -----------------------------
+# Overall Early CT  -------------------------------
+
+# ALL SCHRAG Total Year 0 
+
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+
+# ALL SCHRAG Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL SCHRAG Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL SCHRAG Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# --------------
+
+
+# By MSA P vs MSA C -----------------
+# ALL SCHRAG Total Year 0 
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+
+# ALL SCHRAG Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>% summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>% 
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL SCHRAG Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>% summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL SCHRAG Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% group_by(DIAG) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ------------
+# By Possible vs probable --------------------
+
+# ALL SCHRAG Total Year 0 
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+
+# ALL SCHRAG Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+# Change from baseline
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>% summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==1) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+# ALL SCHRAG Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>%  inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>% summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==2) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+# ALL SCHRAG Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(
+    mean=mean(SCHRAG_EMOTIONAL_v2),
+    sd=sd(SCHRAG_EMOTIONAL_v2),
+    median=median(SCHRAG_EMOTIONAL_v2),
+    Q1 = quantile(SCHRAG_EMOTIONAL_v2, 0.25),
+    Q3 = quantile(SCHRAG_EMOTIONAL_v2, 0.75),
+    min=min(SCHRAG_EMOTIONAL_v2),
+    max=max(SCHRAG_EMOTIONAL_v2),
+    n=n()
+  )
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% group_by(DIAGNIV) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  summarise(mean= mean((SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY)) 
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>% 
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= TIME_STUDY*12) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
+  filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  SCHRAG_EMOTIONAL_v2) %>%
+  rename("Baseline"="SCHRAG_EMOTIONAL_v2") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Year==3) %>%
+      filter(!is.na(SCHRAG_EMOTIONAL_v2)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, SCHRAG_EMOTIONAL_v2)
+  ) %>% 
+  mutate(Diff= (SCHRAG_EMOTIONAL_v2-Baseline)/TIME_STUDY) %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(Diff),
+    sd=sd(Diff),
+    median=median(Diff),
+    Q1 = quantile(Diff, 0.25),
+    Q3 = quantile(Diff, 0.75),
+    min=min(Diff),
+    max=max(Diff),
+    n=n()
+  )
+
+# -----------------------------
+
