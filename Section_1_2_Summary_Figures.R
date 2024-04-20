@@ -4155,3 +4155,802 @@ plot %>% select(-c(TIME_STUDY, DATECONSULT   ,  Elapsed)) %>% distinct() %>%
 
 
 # ---------
+# Inputs UMSARS 1+2 Total ----------------------------------
+
+AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
+AllMSA_Pop_BaselineYear1_410 <- fread("Source/AllMSA_Pop_BaselineYear1_410.txt")
+AllMSA_Pop_BaselineYear1Year2_245 <- fread("Source/AllMSA_Pop_BaselineYear1Year2_245.txt")
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 <- fread("Source/AllMSA_Pop_BaselineYear1Year2Year3Plus_158.txt")
+
+EarlyCT_Pop_Baseline_319 <- fread("Source/EarlyCT_Pop_Baseline_319.txt")
+EarlyCT_Pop_BaselineYear1_208 <- fread("Source/EarlyCT_Pop_BaselineYear1_208.txt")
+EarlyCT_Pop_BaselineYear1Year2_134 <- fread("Source/EarlyCT_Pop_BaselineYear1Year2_134.txt")
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 <- fread( "Source/EarlyCT_Pop_BaselineYear1Year2Year3Plus_99.txt")
+
+# UMSARS 1+2 Total Score 
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
+
+UMSARS1and2_TOT <- dataCohorteManaged %>% 
+  select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1and2_TOT)
+
+
+UMSARS1and2_TOT <-  UMSARS1and2_TOT %>%  select(NUM, TIME_STUDY, Year, UMSARS1and2_TOT)
+
+# ----------------
+# Overall MSA Entire -------------------------------
+
+
+
+plot <- AllMSA_Pop_Baseline_671 %>% inner_join(UMSARS1and2_TOT) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS1and2_TOT)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  bind_rows(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1and2_TOT) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS1and2_TOT)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() 
+  ) %>%
+  bind_rows(
+    
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1and2_TOT) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS1and2_TOT)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup()
+  ) %>%
+  bind_rows(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1and2_TOT) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS1and2_TOT)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup()
+  )  
+
+palette <- c( "#D45769", "#0099E0","#0072BB", "#00468B")
+
+
+plot  %>% ggplot(aes(x = TIME_STUDY*12, y = as.factor(Year), fill=as.factor(Year), colour=as.factor(Year) )) +
+  theme_minimal() +
+  geom_vline(xintercept = c(0, 12, 24, 36), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_violin(scale = "width", trim = FALSE,  width = 2.0, alpha=0.85, adjust = 0.4) +
+  geom_point(position = position_jitter(height = 0.22), size=0.4 , colour="black", alpha = 0.6) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(x = "\n Months Since Baseline Visit", y = "Visit Year \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 54, by = 6)) 
+
+
+
+plot  %>% ggplot(aes(y = UMSARS1and2_TOT , x = as.factor(Year), fill=as.factor(Year), colour=as.factor(Year) )) +
+  theme_minimal() +
+  geom_hline(yintercept = c(46, 54, 60, 64), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.80, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " UMSARS 1 + 2 Total Score \n", x = "\n Visit Year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(0, 100, by = 10)) 
+
+
+palette <- c( "#D45769", "#0072BB")
+
+plot  %>% 
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  mutate(Year=ifelse(Year==0, "Year 0",
+                     ifelse(Year==1, "Year 1 ",
+                            ifelse(Year==2, "Year 2",
+                                   ifelse(Year==3, "Year 3+", NA))))) %>%
+  ggplot(aes(y = UMSARS1and2_TOT , x = as.factor(DIAG), fill=as.factor(DIAG), colour=as.factor(DIAG) )) +
+  facet_wrap(~as.factor(Year), ncol=4) +
+  theme_minimal() +
+  geom_hline(yintercept = c(46, 54, 60, 64), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.70, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " UMSARS 1 + 2 Total Score \n", x = "\n MSA-C vs MSA-P \n Year-over-year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        # strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(0, 100, by = 10))
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+plot  %>% 
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  mutate(Year=ifelse(Year==0, "Year 0",
+                     ifelse(Year==1, "Year 1 ",
+                            ifelse(Year==2, "Year 2",
+                                   ifelse(Year==3, "Year 3+", NA))))) %>%
+  ggplot(aes(y = UMSARS1and2_TOT , x = as.factor(DIAG), fill=as.factor(DIAG), colour=as.factor(DIAG) )) +
+  facet_wrap(~as.factor(Year), ncol=4) +
+  theme_minimal() +
+  geom_hline(yintercept = c(46, 54, 60, 64), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.70, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " UMSARS 1 + 2 Total Score \n", x = "\n Probable MSA vs Possible MSA \n Year-over-year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        # strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(0, 100, by = 10))
+
+
+
+
+
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS1and2_TOT %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1and2_TOT, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 + 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+
+
+UMSARS1and2_TOT %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1and2_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 + 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS1and2_TOT %>% inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1and2_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 + 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+
+# Deltas
+
+palette <- c( "#0099E0","#0072BB", "#00468B")
+
+plot %>% select(-c(TIME_STUDY, Elapsed)) %>% distinct() %>%
+  spread(key=Year, value=UMSARS1and2_TOT   ) %>% 
+  inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(`1`=`1`-`0`, `2`=`2`-`0`, `3`=`3`-`0`, `0`=`0`-`0`) %>%
+  gather(Year, Delta, `0`:`3`) %>% filter(Year!=0) %>%
+  ggplot(aes(y = Delta , x = as.factor(Year), fill=as.factor(Year), colour=as.factor(Year) )) +
+  theme_minimal() +
+  geom_hline(yintercept = c(10, 19, 25), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_hline(yintercept = c(0),  color = "#D45769", alpha = 0.5, size = 2) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.80, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " Delta UMSARS 1 + 2 \n From Baseline \n", x = "\n Visit Year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(-15, 75, by = 10)) 
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+
+plot %>% select(-c(TIME_STUDY, Elapsed)) %>% distinct() %>%
+  spread(key=Year, value=UMSARS1and2_TOT   ) %>% 
+  inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(`1`=`1`-`0`, `2`=`2`-`0`, `3`=`3`-`0`, `0`=`0`-`0`) %>%
+  gather(Year, Delta, `0`:`3`) %>% filter(Year!=0) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  mutate(Year=ifelse(Year==0, "Year 0",
+                     ifelse(Year==1, "Year 1 ",
+                            ifelse(Year==2, "Year 2",
+                                   ifelse(Year==3, "Year 3+", NA))))) %>%
+  ggplot(aes(y = Delta , x = as.factor(DIAG), fill=as.factor(DIAG), colour=as.factor(DIAG) )) +
+  facet_wrap(~as.factor(Year), ncol=4) +
+  theme_minimal() +
+  geom_hline(yintercept = c(10, 19, 25), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_hline(yintercept = c(0),  color = "#D45769", alpha = 0.5, size = 2) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.80, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " Delta UMSARS 1 + 2 \n From Baseline \n", x = "\n MSA-C vs MSA-P \n Year-over-year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        #  strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(-15, 75, by = 10)) 
+
+
+
+plot %>% select(-c(TIME_STUDY, Elapsed)) %>% distinct() %>%
+  spread(key=Year, value=UMSARS1and2_TOT   ) %>% 
+  inner_join(AllMSA_Pop_Baseline_671) %>%
+  mutate(`1`=`1`-`0`, `2`=`2`-`0`, `3`=`3`-`0`, `0`=`0`-`0`) %>%
+  gather(Year, Delta, `0`:`3`) %>% filter(Year!=0) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Prob MSA", "Poss MSA")) %>%  mutate(Year=ifelse(Year==0, "Year 0",
+                                                                                       ifelse(Year==1, "Year 1 ",
+                                                                                              ifelse(Year==2, "Year 2",
+                                                                                                     ifelse(Year==3, "Year 3+", NA))))) %>%
+  ggplot(aes(y = Delta , x = as.factor(DIAG), fill=as.factor(DIAG), colour=as.factor(DIAG) )) +
+  facet_wrap(~as.factor(Year), ncol=4) +
+  theme_minimal() +
+  geom_hline(yintercept = c(10, 19, 25), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_hline(yintercept = c(0),  color = "#D45769", alpha = 0.5, size = 2) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.80, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " Delta UMSARS 1 + 2 \n From Baseline \n", x = "\n Probable MSA vs Possible MSA \n Year-over-year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        # strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(-15, 75, by = 10)) 
+
+
+
+
+
+# -------------------
+# Overall Early CT  -------------------------------
+
+plot <- EarlyCT_Pop_Baseline_319 %>% inner_join(UMSARS1and2_TOT) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS1and2_TOT)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>%
+  bind_rows(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1and2_TOT) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS1and2_TOT)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() 
+  ) %>%
+  bind_rows(
+    
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1and2_TOT) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS1and2_TOT)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup()
+  ) %>%
+  bind_rows(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1and2_TOT) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS1and2_TOT)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup()
+  )  
+
+
+palette <- c( "#D45769", "#0099E0","#0072BB", "#00468B")
+
+
+plot  %>% ggplot(aes(x = TIME_STUDY*12, y = as.factor(Year), fill=as.factor(Year), colour=as.factor(Year) )) +
+  theme_minimal() +
+  geom_vline(xintercept = c(0, 12, 24, 36), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_violin(scale = "width", trim = FALSE,  width = 2.0, alpha=0.85, adjust = 0.4) +
+  geom_point(position = position_jitter(height = 0.22), size=0.4 , colour="black", alpha = 0.6) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(x = "\n Months Since Baseline Visit", y = "Visit Year \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 54, by = 6)) 
+
+
+
+plot  %>% ggplot(aes(y = UMSARS1and2_TOT , x = as.factor(Year), fill=as.factor(Year), colour=as.factor(Year) )) +
+  theme_minimal() +
+  geom_hline(yintercept = c(35, 45, 53, 59), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.80, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " UMSARS 1 + 2 Total Score \n", x = "\n Visit Year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(0, 100, by = 10)) 
+
+
+palette <- c( "#D45769", "#0072BB")
+
+plot  %>% 
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  mutate(Year=ifelse(Year==0, "Year 0",
+                     ifelse(Year==1, "Year 1 ",
+                            ifelse(Year==2, "Year 2",
+                                   ifelse(Year==3, "Year 3+", NA))))) %>%
+  ggplot(aes(y = UMSARS1and2_TOT , x = as.factor(DIAG), fill=as.factor(DIAG), colour=as.factor(DIAG) )) +
+  facet_wrap(~as.factor(Year), ncol=4) +
+  theme_minimal() +
+  geom_hline(yintercept = c(35, 45, 53, 59), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.70, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " UMSARS 1 + 2 Total Score \n", x = "\n MSA-C vs MSA-P \n Year-over-year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        # strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(0, 100, by = 10))
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+plot  %>% 
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  mutate(Year=ifelse(Year==0, "Year 0",
+                     ifelse(Year==1, "Year 1 ",
+                            ifelse(Year==2, "Year 2",
+                                   ifelse(Year==3, "Year 3+", NA))))) %>%
+  ggplot(aes(y = UMSARS1and2_TOT , x = as.factor(DIAG), fill=as.factor(DIAG), colour=as.factor(DIAG) )) +
+  facet_wrap(~as.factor(Year), ncol=4) +
+  theme_minimal() +
+  geom_hline(yintercept = c(35, 45, 53, 59), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.70, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " UMSARS 1 + 2 Total Score \n", x = "\n Probable MSA vs Possible MSA \n Year-over-year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        # strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(0, 100, by = 10))
+
+
+
+
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+UMSARS1and2_TOT %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1and2_TOT, )) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", colour="#00468B", fill="#00468B" , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 + 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+UMSARS1and2_TOT %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1and2_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n MSA-C vs MSA-P \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 + 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+UMSARS1and2_TOT %>% inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Probable MSA", "Possible MSA")) %>%
+  filter(TIME_STUDY<=5) %>%
+  ggplot(aes(TIME_STUDY, UMSARS1and2_TOT, group=as.factor(DIAG), col=as.factor(DIAG), fill=as.factor(DIAG))) +
+  geom_line(aes(group=NUM), col="black" , alpha=0.1) +
+  geom_jitter(size=0.1, colour="black", alpha=0.4) +
+  stat_smooth(method="gam", , alpha=0.5, lwd=1.5, se=TRUE, formula = y ~ s(x, bs = "cs", k =10))+
+  theme_minimal() +
+  xlab("\n Probable vs Possible MSA \n Elapsed number of years since study enrollment \n [All available patient records up to year 5]") +
+  ylab("UMSARS 1 + 2 Total Score \n At each evaluation \n") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_x_continuous(breaks = seq(0, 5, by = 0.5)) 
+
+
+
+
+# Deltas
+
+palette <- c( "#0099E0","#0072BB", "#00468B")
+
+plot %>% select(-c(TIME_STUDY, Elapsed)) %>% distinct() %>%
+  spread(key=Year, value=UMSARS1and2_TOT   ) %>% 
+  inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(`1`=`1`-`0`, `2`=`2`-`0`, `3`=`3`-`0`, `0`=`0`-`0`) %>%
+  gather(Year, Delta, `0`:`3`) %>% filter(Year!=0) %>%
+  ggplot(aes(y = Delta , x = as.factor(Year), fill=as.factor(Year), colour=as.factor(Year) )) +
+  theme_minimal() +
+  geom_hline(yintercept = c(11, 19, 25), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_hline(yintercept = c(0),  color = "#D45769", alpha = 0.5, size = 2) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.80, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " Delta UMSARS 1 + 2 \n From Baseline \n", x = "\n Visit Year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(-10, 75, by = 10)) 
+
+
+
+
+palette <- c( "#D45769", "#0072BB")
+
+
+
+plot %>% select(-c(TIME_STUDY, Elapsed)) %>% distinct() %>%
+  spread(key=Year, value=UMSARS1and2_TOT   ) %>% 
+  inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(`1`=`1`-`0`, `2`=`2`-`0`, `3`=`3`-`0`, `0`=`0`-`0`) %>%
+  gather(Year, Delta, `0`:`3`) %>% filter(Year!=0) %>%
+  mutate(DIAG=ifelse(DIAG=="CB", "MSA-C", "MSA-P")) %>%
+  mutate(Year=ifelse(Year==0, "Year 0",
+                     ifelse(Year==1, "Year 1 ",
+                            ifelse(Year==2, "Year 2",
+                                   ifelse(Year==3, "Year 3+", NA))))) %>%
+  ggplot(aes(y = Delta , x = as.factor(DIAG), fill=as.factor(DIAG), colour=as.factor(DIAG) )) +
+  facet_wrap(~as.factor(Year), ncol=4) +
+  theme_minimal() +
+  geom_hline(yintercept = c(11, 19, 25), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_hline(yintercept = c(0),  color = "#D45769", alpha = 0.5, size = 2) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.80, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " Delta UMSARS 1 + 2 \n From Baseline \n", x = "\n MSA-C vs MSA-P \n Year-over-year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        #  strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(-10, 75, by = 10)) 
+
+
+
+plot %>% select(-c(TIME_STUDY, Elapsed)) %>% distinct() %>%
+  spread(key=Year, value=UMSARS1and2_TOT   ) %>% 
+  inner_join(EarlyCT_Pop_Baseline_319) %>%
+  mutate(`1`=`1`-`0`, `2`=`2`-`0`, `3`=`3`-`0`, `0`=`0`-`0`) %>%
+  gather(Year, Delta, `0`:`3`) %>% filter(Year!=0) %>%
+  mutate(DIAG=ifelse(DIAGNIV=="PROB", "Prob MSA", "Poss MSA")) %>%  mutate(Year=ifelse(Year==0, "Year 0",
+                                                                                       ifelse(Year==1, "Year 1 ",
+                                                                                              ifelse(Year==2, "Year 2",
+                                                                                                     ifelse(Year==3, "Year 3+", NA))))) %>%
+  ggplot(aes(y = Delta , x = as.factor(DIAG), fill=as.factor(DIAG), colour=as.factor(DIAG) )) +
+  facet_wrap(~as.factor(Year), ncol=4) +
+  theme_minimal() +
+  geom_hline(yintercept = c(11, 19, 25), linetype = "dashed", color = "black", alpha = 0.5, size = 0.5) +
+  geom_hline(yintercept = c(0),  color = "#D45769", alpha = 0.5, size = 2) +
+  geom_violin(scale = "width", trim = FALSE,  width = 1.0, alpha=0.80, adjust = 0.4) +
+  geom_point( position = position_jitter(height = 0.22, width = 0.22), size=1.5 , colour="black", alpha = 0.4) +
+  geom_boxplot(width = 0.5,  outlier.shape = NA, fill="transparent", notch = TRUE, colour="white", alpha=0.6) +
+  labs(y = " Delta UMSARS 1 + 2 \n From Baseline \n", x = "\n Probable MSA vs Possible MSA \n Year-over-year") +
+  scale_color_manual(values=palette) +
+  scale_fill_manual(values=palette) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        # strip.text = element_blank(),
+        axis.line = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 12, vjust = -0.5),
+        axis.title.y = element_text(size = 12, vjust = -0.5),
+        plot.margin = margin(5, 5, 5, 5, "pt")) +
+  scale_y_continuous(breaks = seq(-10, 75, by = 10)) 
+
+
+
+
+# ---------
