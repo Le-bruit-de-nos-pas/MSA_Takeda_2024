@@ -22398,3 +22398,827 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SBP) %>% filter(Year==
   )
 
 # -----------------------------
+
+# Inputs UMSARS 3 Orthos BINARY SUMMARY ----------------------------------
+
+AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
+AllMSA_Pop_BaselineYear1_410 <- fread("Source/AllMSA_Pop_BaselineYear1_410.txt")
+AllMSA_Pop_BaselineYear1Year2_245 <- fread("Source/AllMSA_Pop_BaselineYear1Year2_245.txt")
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 <- fread("Source/AllMSA_Pop_BaselineYear1Year2Year3Plus_158.txt")
+
+EarlyCT_Pop_Baseline_319 <- fread("Source/EarlyCT_Pop_Baseline_319.txt")
+EarlyCT_Pop_BaselineYear1_208 <- fread("Source/EarlyCT_Pop_BaselineYear1_208.txt")
+EarlyCT_Pop_BaselineYear1Year2_134 <- fread("Source/EarlyCT_Pop_BaselineYear1Year2_134.txt")
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 <- fread( "Source/EarlyCT_Pop_BaselineYear1Year2Year3Plus_99.txt")
+
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
+SBP <- dataCohorteManaged %>%
+  select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS3_ORTHO, PAS_COU, PAS_1MN:PAS_10MN, deltaPAS)
+
+SBP <- SBP %>% filter(!is.na(deltaPAS))
+SBP <-  gather(SBP, measure_PAS, PAS_DEB, PAS_1MN:PAS_10MN)
+SBP <-  SBP %>% filter(deltaPAS == PAS_DEB-PAS_COU)
+
+SBP$measure_PAS <- substr(SBP$measure_PAS, start = 5, stop=nchar(SBP$measure_PAS))
+SBP$measure_PAS <- substr(SBP$measure_PAS, start = 1, stop=nchar(SBP$measure_PAS)-2)
+unique(SBP$measure_PAS)
+
+SBP <- SBP %>% select(-c(measure_PAS)) %>% distinct()
+SBP <-  SBP %>% ungroup()
+mean(SBP$UMSARS3_ORTHO, na.rm=T)
+SBP <- SBP %>% select(-c(deltaPAS, PAS_DEB))
+
+# All we need for 
+#orthos 
+#PAS COU 
+#PAS DEB 
+#delta PAS
+#FC DEB 
+#FC COU
+
+UMSARS3_ORTHO_Baseline_Pats <- SBP %>% filter(Year==0) %>% filter(!is.na(PAS_COU)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM) %>% distinct()
+
+# ----------------
+# Overall MSA Entire -------------------------------
+
+# ALL UMSARS Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(SBP) %>% filter(Year==0) %>% 
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+# ALL UMSARS Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SBP) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SBP) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>%  inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% mutate(perc=n/sum(n))
+
+
+
+
+# ALL UMSARS Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SBP) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+# Change from baseline
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SBP) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>%  inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% mutate(perc=n/sum(n))
+
+
+
+# ALL UMSARS Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SBP) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SBP) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>%  
+  group_by(Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% mutate(perc=n/sum(n))
+
+# --------------
+
+
+# By MSA P vs MSA C -----------------
+# ALL UMSARS Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAG, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+# ALL UMSARS Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SBP) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAG, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+# Change from baseline
+
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SBP) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by(DIAG, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAG) %>% mutate(perc=n/sum(n))
+
+
+
+
+# ALL UMSARS Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SBP) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAG, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SBP) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by(DIAG, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAG) %>% mutate(perc=n/sum(n))
+
+
+
+# ALL UMSARS Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SBP) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAG, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SBP) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>%  inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAG, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAG) %>% mutate(perc=n/sum(n))
+
+
+# ------------
+# By Possible vs probable --------------------
+
+# ALL UMSARS Total Year 0 
+
+AllMSA_Pop_Baseline_671 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAGNIV, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+# ALL UMSARS Total Year 1
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SBP) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAGNIV, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+# Change from baseline
+
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1_410 %>% inner_join(SBP) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by(DIAGNIV, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAGNIV) %>% mutate(perc=n/sum(n))
+
+
+
+# ALL UMSARS Total Year 2
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SBP) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAGNIV, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+# Change from baseline
+
+
+AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SBP) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by(DIAGNIV, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAGNIV) %>% mutate(perc=n/sum(n))
+
+
+
+# ALL UMSARS Total Year 3
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SBP) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAGNIV, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SBP) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by(DIAGNIV, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAGNIV) %>% mutate(perc=n/sum(n))
+
+
+
+
+# -----------------------------
+# Overall Early CT  -------------------------------
+
+# ALL UMSARS Total Year 0 
+
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+
+# ALL UMSARS Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SBP) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+# Change from baseline
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SBP) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by( Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% mutate(perc=n/sum(n))
+
+
+
+
+
+
+# ALL UMSARS Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SBP) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+# Change from baseline
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SBP) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by( Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% mutate(perc=n/sum(n))
+
+
+# ALL UMSARS Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SBP) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SBP) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by( Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% mutate(perc=n/sum(n))
+
+
+
+
+# --------------
+
+
+# By MSA P vs MSA C -----------------
+# ALL UMSARS Total Year 0 
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAG, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+# ALL UMSARS Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SBP) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAG, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+# Change from baseline
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SBP) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by(DIAG, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAG) %>% mutate(perc=n/sum(n))
+
+
+
+
+
+# ALL UMSARS Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SBP) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAG, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+# Change from baseline
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SBP) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by(DIAG, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAG) %>% mutate(perc=n/sum(n))
+
+
+
+# ALL UMSARS Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SBP) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAG) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAG, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SBP) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by(DIAG, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAG) %>% mutate(perc=n/sum(n))
+
+
+
+
+
+# ------------
+# By Possible vs probable --------------------
+
+# ALL UMSARS Total Year 0 
+
+EarlyCT_Pop_Baseline_319 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAGNIV, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+# ALL UMSARS Total Year 1
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SBP) %>% filter(Year==1) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAGNIV, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+# Change from baseline
+
+
+
+EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SBP) %>% filter(Year==1) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by(DIAGNIV, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAGNIV) %>% mutate(perc=n/sum(n))
+
+
+
+
+# ALL UMSARS Total Year 2
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SBP) %>% filter(Year==2) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAGNIV, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+# Change from baseline
+
+
+EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SBP) %>% filter(Year==2) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by(DIAGNIV, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAGNIV) %>% mutate(perc=n/sum(n))
+
+
+
+# ALL UMSARS Total Year 3
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SBP) %>% filter(Year==3) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% group_by(DIAGNIV) %>% inner_join(UMSARS3_ORTHO_Baseline_Pats) %>%
+  group_by(DIAGNIV, UMSARS3_ORTHO) %>% count() %>% 
+  spread(key=UMSARS3_ORTHO, value=n) %>%
+  mutate(tot=(`1`+`0`)) %>%
+  mutate(perc=`1`/tot)
+
+
+
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SBP) %>% filter(Year==0) %>%
+  filter(!is.na(UMSARS3_ORTHO)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV,  UMSARS3_ORTHO) %>%
+  rename("Baseline"="UMSARS3_ORTHO") %>%
+  inner_join(
+    EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SBP) %>% filter(Year==3) %>%
+      filter(!is.na(UMSARS3_ORTHO)) %>%
+      mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+      group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+      group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+      group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS3_ORTHO)
+  ) %>% 
+  group_by(DIAGNIV, Baseline, UMSARS3_ORTHO) %>% count() %>%
+  ungroup() %>% group_by(DIAGNIV) %>% mutate(perc=n/sum(n))
+
+
+
+# -----------------------------
