@@ -76305,32 +76305,32 @@ names(SCHRAG)
 
 AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>%
   group_by(Year) %>%
-  summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
+  summarise(mean=median(number_na), min=min(number_na), max=max(number_na)) %>% drop_na()
 
 AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>%
   group_by(Year, DIAG) %>%
-  summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
+  summarise(mean=median(number_na), min=min(number_na), max=max(number_na)) %>% drop_na()
 
 AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>%
   group_by(Year, DIAGNIV) %>%
-  summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
+  summarise(mean=median(number_na), min=min(number_na), max=max(number_na)) %>% drop_na()
 
 
 AllMSA_Pop_Baseline_671 %>% inner_join(SCHRAG) %>%
   group_by(Year) %>%
-  summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
+  summarise(mean=median(number_na), min=min(number_na), max=max(number_na)) %>% drop_na()
 
 AllMSA_Pop_Baseline_671 %>% inner_join(SCHRAG) %>%
   group_by(Year, DIAG) %>%
-  summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
+  summarise(mean=median(number_na), min=min(number_na), max=max(number_na)) %>% drop_na()
 
 AllMSA_Pop_Baseline_671 %>% inner_join(SCHRAG) %>%
   group_by(Year, DIAGNIV) %>%
-  summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
+  summarise(mean=median(number_na), min=min(number_na), max=max(number_na)) %>% drop_na()
 
 # ---------------------------
 
-# Missing Items MSA QoL   ----------------------------------
+# Missing Items SCOPA AUT   ----------------------------------
 
 AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
 AllMSA_Pop_BaselineYear1_410 <- fread("Source/AllMSA_Pop_BaselineYear1_410.txt")
@@ -76351,87 +76351,64 @@ dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY
                                     ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
 
 
-SCHRAG <- dataCohorteManaged %>% 
-  select(NUM, DATECONSULT, TIME_STUDY, Year, SCHRAG_1:SCHRAG_40, SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL, ECHANQV)
-
-SCHRAG %>% select(SCHRAG_TOT, SCHRAG_NONMOTOR, SCHRAG_MOTOR, SCHRAG_EMOTIONAL, ECHANQV)
-
-names(SCHRAG)
-
-SCHRAG$SCHRAG_TOT_v2 <- rowSums(SCHRAG[, 5:44], na.rm = TRUE)
-
-SCHRAG %>% select(SCHRAG_TOT_v2, SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL, ECHANQV) %>% 
-  mutate(SCHRAG_TOT=ifelse(is.na(SCHRAG_TOT),0,SCHRAG_TOT)) %>% ungroup() %>%
-  filter(SCHRAG_TOT  !=0) %>% summarise(SCHRAG_TOT =mean(SCHRAG_TOT , na.rm=T))
+SCOPA <- dataCohorteManaged %>% 
+  select(NUM, DATECONSULT, TIME_STUDY, Year) %>% rename("DATE"="DATECONSULT")
 
 
-SCHRAG %>% select(SCHRAG_TOT_v2, SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL, ECHANQV) %>%
-  mutate(SCHRAG_TOT=ifelse(is.na(SCHRAG_TOT),0,SCHRAG_TOT)) %>% ungroup() %>%
-  mutate(SCHRAG_TOT=ifelse(SCHRAG_TOT==0, SCHRAG_TOT_v2, SCHRAG_TOT)) %>%
-  select(-SCHRAG_TOT_v2) %>% filter(!is.na(SCHRAG_TOT) & is.na(SCHRAG_NONMOTOR))
 
 
-SCHRAG$SCHRAG_TOT_v2 <- rowSums(SCHRAG[, 5:44], na.rm = TRUE)
-SCHRAG$SCHRAG_NONMOTOR_v2 <- rowSums(SCHRAG[, 5:18], na.rm = TRUE)
-SCHRAG$SCHRAG_NONMOTOR_v2 <- rowSums(SCHRAG[, 19:30], na.rm = TRUE)
-SCHRAG$SCHRAG_EMOTIONAL_v2 <- rowSums(SCHRAG[, 31:44], na.rm = TRUE)
+ams_scopa_bx_2015_16 <- haven::read_sas("Source/ams_scopa_bx_2015_16.sas7bdat")
+names(ams_scopa_bx_2015_16)
+ams_scopa_bx_2015_16 <- ams_scopa_bx_2015_16 %>% filter(!is.na(DATE))
 
-SCHRAG <- SCHRAG %>% select(-c(SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL))
+SCOPA <- SCOPA %>% inner_join(ams_scopa_bx_2015_16) 
 
-#SCHRAG <- SCHRAG %>% select(NUM, DATECONSULT, TIME_STUDY, Year, SCHRAG_TOT_v2, SCHRAG_NONMOTOR_v2, SCHRAG_NONMOTOR_v2, SCHRAG_EMOTIONAL_v2, ECHANQV)
-SCHRAG <- SCHRAG %>% filter(SCHRAG_TOT_v2!=0)
+names(SCOPA)
 
-range(SCHRAG$SCHRAG_TOT_v2)
+SCOPA <- SCOPA %>% select(-c("SCOPA_DIG","SCOPA_URI","SCOPA_CDV","SCOPA_THE","SCOPA_PUP", "SCOPA_SEX", "SCOPA_TOT"))
 
-names(SCHRAG)
+SCOPA$number_na <- rowSums(is.na(SCOPA[, 5:32])) 
 
-SCHRAG$all_na <- rowSums(is.na(SCHRAG[, 5:44])) == (44 - 5 + 1)
+mean(SCOPA_na$number_na)
 
-SCHRAG$number_na <- rowSums(is.na(SCHRAG[, 5:44])) 
+SCOPA_na <- SCOPA
 
-SCHRAG <- SCHRAG %>% filter(!(all_na) )
+SCOPA_na <- SCOPA_na %>% inner_join(SCOPA_Baseline_Pats) 
 
-names(SCHRAG)
+SCOPA_na$missing_na <- SCOPA_na$number_na-2
 
-range(SCHRAG$number_na)
+min(SCOPA_na$missing_na)
 
-SCHRAG %>% ggplot(aes(number_na)) + geom_histogram()
-
-mean(SCHRAG$number_na)
+names(SCOPA_na)
 
 
-SCHRAG_Baseline_Pats <- SCHRAG %>% filter(Year==0) %>% filter(!is.na(SCHRAG_TOT_v2)) %>%
-  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
-  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
-  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
-  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM) %>% distinct() %>%
-  inner_join(AllMSA_Pop_Baseline_671)
 
-names(SCHRAG)
-
-AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>%
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCOPA_na) %>%
   group_by(Year) %>%
   summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
 
-AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>%
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCOPA_na) %>%
   group_by(Year, DIAG) %>%
   summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
 
-AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>%
+AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCOPA_na) %>%
   group_by(Year, DIAGNIV) %>%
   summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
 
 
-AllMSA_Pop_Baseline_671 %>% inner_join(SCHRAG) %>%
+AllMSA_Pop_Baseline_671 %>% inner_join(SCOPA_na) %>%
   group_by(Year) %>%
   summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
 
-AllMSA_Pop_Baseline_671 %>% inner_join(SCHRAG) %>%
+AllMSA_Pop_Baseline_671 %>% inner_join(SCOPA_na) %>%
   group_by(Year, DIAG) %>%
   summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
 
-AllMSA_Pop_Baseline_671 %>% inner_join(SCHRAG) %>%
+AllMSA_Pop_Baseline_671 %>% inner_join(SCOPA_na) %>%
   group_by(Year, DIAGNIV) %>%
   summarise(mean=mean(number_na), sd=sd(number_na)) %>% drop_na()
+
+
 
 # ---------------------------
+

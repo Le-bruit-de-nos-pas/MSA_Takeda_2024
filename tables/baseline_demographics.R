@@ -11,7 +11,7 @@ dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
 
 
 BaselineDem <- dataCohorteManaged  %>% 
-  select(NUM, DATECONSULT, DATENAIS, SEXE, DATE_VISITE0, annee_vis0, ANDEBSYMPT, AGE_VISITE0, DELAI_CHARGE) %>%
+  select(NUM, DATECONSULT, DATENAIS, SEXE, DATE_VISITE0, annee_vis0, ANDIAG, ANDEBSYMPT, AGE_VISITE0, DELAI_CHARGE) %>%
   mutate(AGE_DEBSYMPT=AGE_VISITE0-DELAI_CHARGE)  %>%
   inner_join(AllMSA_Pop_Baseline_671) 
 
@@ -27,8 +27,15 @@ BaselineDem <- BaselineDem %>% group_by(NUM) %>% mutate(ANDEBSYMPT=min(ANDEBSYMP
 # Year of first visit, min because some have different ones
 BaselineDem <- BaselineDem %>% group_by(NUM) %>% mutate(annee_vis0=min(annee_vis0, na.rm=T))
 
+# Year of first diagnosis, min because some have different ones
+BaselineDem <- BaselineDem %>% group_by(NUM) %>% mutate(ANDIAG=min(ANDIAG, na.rm=T))
+
 # Years elapsed from symptom to visit 
 BaselineDem <- BaselineDem %>% group_by(NUM) %>% mutate(DELAI_CHARGE=annee_vis0-ANDEBSYMPT)
+
+# Years elapsed from diagnosis to visit 
+
+BaselineDem <- BaselineDem %>% group_by(NUM) %>% mutate(DELAI_DIAG=annee_vis0-ANDIAG)
 
 # missing dates of first visit
 BaselineDem <- BaselineDem %>% group_by(NUM) %>% mutate(DATE_VISITE0=if_else(is.na(DATE_VISITE0), MIN_DATECONSULT, DATE_VISITE0))
@@ -48,6 +55,7 @@ range(BaselineDem$DATE_VISITE0)
 range(BaselineDem$annee_vis0)
 range(BaselineDem$ANDEBSYMPT)
 range(BaselineDem$DELAI_CHARGE)
+range(BaselineDem$DELAI_DIAG)
 range(BaselineDem$MIN_DATECONSULT)
 range(BaselineDem$AGE_VISITE0)
 range(BaselineDem$AGE_DEBSYMPT)
@@ -113,6 +121,20 @@ AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
     n=n()
   )
 
+# DELAI_DIAG
+AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
+  inner_join(EarlyCT_Pop_Baseline_319) %>%
+  summarise(
+    mean=mean(DELAI_DIAG),
+    sd=sd(DELAI_DIAG),
+    median=median(DELAI_DIAG),
+    Q1 = quantile(DELAI_DIAG, 0.25),
+    Q3 = quantile(DELAI_DIAG, 0.75),
+    min=min(DELAI_DIAG),
+    max=max(DELAI_DIAG),
+    n=n()
+  )
+
 
 AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% 
   distinct() %>%
@@ -164,6 +186,19 @@ AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
     n=n()
   )
 
+
+# DELAI_DIAG
+AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
+  summarise(
+    mean=mean(DELAI_DIAG),
+    sd=sd(DELAI_DIAG),
+    median=median(DELAI_DIAG),
+    Q1 = quantile(DELAI_DIAG, 0.25),
+    Q3 = quantile(DELAI_DIAG, 0.75),
+    min=min(DELAI_DIAG),
+    max=max(DELAI_DIAG),
+    n=n()
+  )
 
 AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% 
   distinct() %>%
@@ -226,6 +261,22 @@ AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
   )
 
 
+# DELAI_DIAG
+AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
+  inner_join(EarlyCT_Pop_Baseline_319) %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(DELAI_DIAG),
+    sd=sd(DELAI_DIAG),
+    median=median(DELAI_DIAG),
+    Q1 = quantile(DELAI_DIAG, 0.25),
+    Q3 = quantile(DELAI_DIAG, 0.75),
+    min=min(DELAI_DIAG),
+    max=max(DELAI_DIAG),
+    n=n()
+  )
+
+
 AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% 
   distinct() %>%
   inner_join(EarlyCT_Pop_Baseline_319) %>%
@@ -276,6 +327,20 @@ AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
     Q3 = quantile(DELAI_CHARGE, 0.75),
     min=min(DELAI_CHARGE),
     max=max(DELAI_CHARGE),
+    n=n()
+  )
+
+# DELAI_DIAG
+AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
+  group_by(DIAG) %>%
+  summarise(
+    mean=mean(DELAI_DIAG),
+    sd=sd(DELAI_DIAG),
+    median=median(DELAI_DIAG),
+    Q1 = quantile(DELAI_DIAG, 0.25),
+    Q3 = quantile(DELAI_DIAG, 0.75),
+    min=min(DELAI_DIAG),
+    max=max(DELAI_DIAG),
     n=n()
   )
 
@@ -344,6 +409,23 @@ AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
   )
 
 
+
+# DELAI_DIAG
+AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
+  inner_join(EarlyCT_Pop_Baseline_319) %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(DELAI_DIAG),
+    sd=sd(DELAI_DIAG),
+    median=median(DELAI_DIAG),
+    Q1 = quantile(DELAI_DIAG, 0.25),
+    Q3 = quantile(DELAI_DIAG, 0.75),
+    min=min(DELAI_DIAG),
+    max=max(DELAI_DIAG),
+    n=n()
+  )
+
+
 AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% 
   distinct() %>%
   inner_join(EarlyCT_Pop_Baseline_319) %>%
@@ -394,6 +476,22 @@ AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
     Q3 = quantile(DELAI_CHARGE, 0.75),
     min=min(DELAI_CHARGE),
     max=max(DELAI_CHARGE),
+    n=n()
+  )
+
+
+
+# DELAI_DIAG
+AllMSA_Pop_Baseline_671 %>% inner_join(BaselineDem) %>% distinct() %>%
+  group_by(DIAGNIV) %>%
+  summarise(
+    mean=mean(DELAI_DIAG),
+    sd=sd(DELAI_DIAG),
+    median=median(DELAI_DIAG),
+    Q1 = quantile(DELAI_DIAG, 0.25),
+    Q3 = quantile(DELAI_DIAG, 0.75),
+    min=min(DELAI_DIAG),
+    max=max(DELAI_DIAG),
     n=n()
   )
 
