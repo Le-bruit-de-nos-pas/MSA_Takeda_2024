@@ -5052,7 +5052,7 @@ UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
 for (i in 5:16) {
   UMSARS1[, i][UMSARS1[, i] < 0] <- 0
-}
+}<
 
 
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
@@ -84034,7 +84034,7 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Ye
 # --------------
 
 
-# Inputs UMSARS 1 FDA-modified exc. #11 ----------------------------------
+# Inputs UMSARS 1 FDA-modified exc. #11 collapsed ----------------------------------
 
 AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
 AllMSA_Pop_BaselineYear1_410 <- fread("Source/AllMSA_Pop_BaselineYear1_410.txt")
@@ -84047,7 +84047,6 @@ EarlyCT_Pop_BaselineYear1Year2_134 <- fread("Source/EarlyCT_Pop_BaselineYear1Yea
 EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 <- fread( "Source/EarlyCT_Pop_BaselineYear1Year2Year3Plus_99.txt")
 
 # UMSARS 1 DA-modified exc. #11
-
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
 
 dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
@@ -84056,18 +84055,22 @@ dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY
                              ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
                                     ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
 
-
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
-
 
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
+
 
 # ----------------
 # Overall MSA Entire -------------------------------
@@ -84091,8 +84094,8 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
       group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
   ) %>% 
   mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>%
-  #t_test(Diff~DIAG, detailed =T,var.equal = TRUE) 
-  t_test(Diff~DIAGNIV,  detailed = T,var.equal = TRUE) 
+  t_test(Diff~DIAG, detailed =T,var.equal = TRUE) 
+  #t_test(Diff~DIAGNIV,  detailed = T,var.equal = TRUE) 
 
 
 # ALL UMSARS Total Year 2
@@ -84113,8 +84116,8 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(UMSARS1) %>% filter(Year==0) %>
       group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
   ) %>% 
   mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>%
-  #t_test(Diff~DIAG, detailed = T,var.equal = TRUE) 
- t_test(Diff~DIAGNIV, detailed =T, var.equal = TRUE) 
+  t_test(Diff~DIAG, detailed = T,var.equal = TRUE) 
+ #t_test(Diff~DIAGNIV, detailed =T, var.equal = TRUE) 
 
 
 
@@ -84138,8 +84141,8 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(UMSARS1) %>% filter(Ye
       group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
   ) %>% 
   mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>%
-  #t_test(Diff~DIAG,detailed =T, var.equal = TRUE) 
-  t_test(Diff~DIAGNIV, detailed = T, var.equal = TRUE) 
+  t_test(Diff~DIAG,detailed =T, var.equal = TRUE) 
+  #t_test(Diff~DIAGNIV, detailed = T, var.equal = TRUE) 
 
 # --------------
 
@@ -84165,8 +84168,8 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(UMSARS1) %>% filter(Year==0) %>%
       group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
   ) %>% 
   mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>%
-  #t_test(Diff~DIAG,detailed = T, var.equal = TRUE) 
-  t_test(Diff~DIAGNIV, detailed = T, var.equal = TRUE) 
+  t_test(Diff~DIAG,detailed = T, var.equal = TRUE) 
+  #t_test(Diff~DIAGNIV, detailed = T, var.equal = TRUE) 
 
 
 
@@ -84188,8 +84191,8 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(UMSARS1) %>% filter(Year==0) %
       group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
   ) %>% 
   mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>%
-  #t_test(Diff~DIAG, detailed = T,var.equal = TRUE) 
-  t_test(Diff~DIAGNIV, detailed = T, var.equal = TRUE) 
+  t_test(Diff~DIAG, detailed = T,var.equal = TRUE) 
+  #t_test(Diff~DIAGNIV, detailed = T, var.equal = TRUE) 
 
 
 
@@ -84211,10 +84214,11 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(UMSARS1) %>% filter(Ye
       group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
   ) %>% 
   mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>%
-  #t_test(Diff~DIAG, detailed = T, var.equal = TRUE) 
-  t_test(Diff~DIAGNIV, detailed = T, var.equal = TRUE) 
+  t_test(Diff~DIAG, detailed = T, var.equal = TRUE) 
+  #t_test(Diff~DIAGNIV, detailed = T, var.equal = TRUE) 
 
 # --------------
+
 
 
 # Inputs UMSARS 2 Total ----------------------------------

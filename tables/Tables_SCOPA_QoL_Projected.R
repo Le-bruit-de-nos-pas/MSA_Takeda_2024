@@ -18937,3 +18937,346 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Yea
 # # --------------
 # 
 # 
+
+# Old Schrag MSA/QoL non-Imputed    ----------------------------------
+
+AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
+AllMSA_Pop_BaselineYear1_410 <- fread("Source/AllMSA_Pop_BaselineYear1_410.txt")
+AllMSA_Pop_BaselineYear1Year2_245 <- fread("Source/AllMSA_Pop_BaselineYear1Year2_245.txt")
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 <- fread("Source/AllMSA_Pop_BaselineYear1Year2Year3Plus_158.txt")
+
+EarlyCT_Pop_Baseline_319 <- fread("Source/EarlyCT_Pop_Baseline_319.txt")
+EarlyCT_Pop_BaselineYear1_208 <- fread("Source/EarlyCT_Pop_BaselineYear1_208.txt")
+EarlyCT_Pop_BaselineYear1Year2_134 <- fread("Source/EarlyCT_Pop_BaselineYear1Year2_134.txt")
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 <- fread( "Source/EarlyCT_Pop_BaselineYear1Year2Year3Plus_99.txt")
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
+
+SCHRAG <- dataCohorteManaged %>% 
+  select(NUM, DATECONSULT, TIME_STUDY, Year, SCHRAG_1:SCHRAG_40, SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL, ECHANQV)
+
+SCHRAG %>% select(SCHRAG_TOT, SCHRAG_NONMOTOR, SCHRAG_MOTOR, SCHRAG_EMOTIONAL, ECHANQV)
+
+names(SCHRAG)
+
+SCHRAG$SCHRAG_TOT_v2 <- rowSums(SCHRAG[, 5:44], na.rm = TRUE)
+
+SCHRAG %>% select(SCHRAG_TOT_v2, SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL, ECHANQV) %>% 
+  mutate(SCHRAG_TOT=ifelse(is.na(SCHRAG_TOT),0,SCHRAG_TOT)) %>% ungroup() %>%
+  filter(SCHRAG_TOT  !=0) %>% summarise(SCHRAG_TOT =mean(SCHRAG_TOT , na.rm=T))
+
+
+SCHRAG %>% select(SCHRAG_TOT_v2, SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL, ECHANQV) %>%
+  mutate(SCHRAG_TOT=ifelse(is.na(SCHRAG_TOT),0,SCHRAG_TOT)) %>% ungroup() %>%
+  mutate(SCHRAG_TOT=ifelse(SCHRAG_TOT==0, SCHRAG_TOT_v2, SCHRAG_TOT)) %>%
+  select(-SCHRAG_TOT_v2) %>% filter(!is.na(SCHRAG_TOT) & is.na(SCHRAG_NONMOTOR))
+
+
+SCHRAG$SCHRAG_TOT_v2 <- rowSums(SCHRAG[, 5:44], na.rm = TRUE)
+SCHRAG$SCHRAG_MOTOR_v2 <- rowSums(SCHRAG[, 5:18], na.rm = TRUE)
+SCHRAG$SCHRAG_NONMOTOR_v2 <- rowSums(SCHRAG[, 19:30], na.rm = TRUE)
+SCHRAG$SCHRAG_EMOTIONAL_v2 <- rowSums(SCHRAG[, 31:44], na.rm = TRUE)
+
+SCHRAG <- SCHRAG %>% select(-c(SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL))
+
+#SCHRAG <- SCHRAG %>% select(NUM, DATECONSULT, TIME_STUDY, Year, SCHRAG_TOT_v2, SCHRAG_MOTOR_v2, SCHRAG_NONMOTOR_v2, SCHRAG_EMOTIONAL_v2, ECHANQV)
+SCHRAG <- SCHRAG %>% filter(SCHRAG_TOT_v2!=0)
+
+range(SCHRAG$SCHRAG_TOT_v2)
+
+names(SCHRAG)
+
+SCHRAG$all_na <- rowSums(is.na(SCHRAG[, 5:44])) == (44 - 5 + 1)
+
+SCHRAG$number_na <- rowSums(is.na(SCHRAG[, 5:44])) 
+
+SCHRAG <- SCHRAG %>% filter(!(all_na) )
+
+names(SCHRAG)
+
+range(SCHRAG$number_na)
+
+SCHRAG %>% ggplot(aes(number_na)) + geom_histogram()
+
+mean(SCHRAG$number_na)
+
+SCHRAG_Baseline_Pats <- SCHRAG %>% filter(Year==0) %>% filter(!is.na(SCHRAG_TOT_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM) %>% distinct() %>%
+  inner_join(AllMSA_Pop_Baseline_671)
+
+
+Old_SCHRAG <- EarlyCT_Pop_Baseline_319 %>% inner_join(SCHRAG) %>%
+  filter(!is.na(SCHRAG_TOT_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% drop_na() %>%
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  select(NUM, Year) %>% distinct()
+
+# --------
+
+# New SCHARG Imputed NEW Patients How many missing   ----------------------------------
+
+
+AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
+AllMSA_Pop_BaselineYear1_410 <- fread("Source/AllMSA_Pop_BaselineYear1_410.txt")
+AllMSA_Pop_BaselineYear1Year2_245 <- fread("Source/AllMSA_Pop_BaselineYear1Year2_245.txt")
+AllMSA_Pop_BaselineYear1Year2Year3Plus_158 <- fread("Source/AllMSA_Pop_BaselineYear1Year2Year3Plus_158.txt")
+
+EarlyCT_Pop_Baseline_319 <- fread("Source/EarlyCT_Pop_Baseline_319.txt")
+EarlyCT_Pop_BaselineYear1_208 <- fread("Source/EarlyCT_Pop_BaselineYear1_208.txt")
+EarlyCT_Pop_BaselineYear1Year2_134 <- fread("Source/EarlyCT_Pop_BaselineYear1Year2_134.txt")
+EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 <- fread( "Source/EarlyCT_Pop_BaselineYear1Year2Year3Plus_99.txt")
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
+
+SCHRAG <- dataCohorteManaged %>% 
+  select(NUM, DATECONSULT, TIME_STUDY, Year, SCHRAG_1:SCHRAG_40, SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL, ECHANQV)
+
+SCHRAG %>% select(SCHRAG_TOT, SCHRAG_NONMOTOR, SCHRAG_MOTOR, SCHRAG_EMOTIONAL, ECHANQV)
+
+names(SCHRAG)
+
+SCHRAG$SCHRAG_TOT_v2 <- rowSums(SCHRAG[, 5:44], na.rm = TRUE)
+SCHRAG$SCHRAG_MOTOR_v2 <- rowSums(SCHRAG[, 5:18], na.rm = TRUE)
+SCHRAG$SCHRAG_NONMOTOR_v2 <- rowSums(SCHRAG[, 19:30], na.rm = TRUE)
+SCHRAG$SCHRAG_EMOTIONAL_v2 <- rowSums(SCHRAG[, 31:44], na.rm = TRUE)
+
+SCHRAG <- SCHRAG %>% select(-c(SCHRAG_TOT, SCHRAG_MOTOR, SCHRAG_NONMOTOR, SCHRAG_EMOTIONAL))
+
+SCHRAG <- SCHRAG %>% filter(SCHRAG_TOT_v2!=0)
+
+range(SCHRAG$SCHRAG_TOT_v2)
+
+names(SCHRAG)
+
+SCHRAG$all_na <- rowSums(is.na(SCHRAG[, 5:44])) == (44 - 5 + 1)
+
+SCHRAG$number_na <- rowSums(is.na(SCHRAG[, 5:44])) 
+
+SCHRAG <- SCHRAG %>% filter(!(all_na) )
+
+names(SCHRAG)
+
+range(SCHRAG$number_na)
+
+SCHRAG %>% ggplot(aes(number_na)) + geom_histogram()
+
+mean(SCHRAG$number_na)
+
+SCHRAG_Baseline_Pats <- SCHRAG %>% filter(Year==0) %>% filter(!is.na(SCHRAG_TOT_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% 
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM) %>% distinct() %>%
+  inner_join(AllMSA_Pop_Baseline_671)
+
+SCHRAG$motor_na <- rowSums(is.na(SCHRAG[, 5:18])) # 14
+SCHRAG$non_motor_na <- rowSums(is.na(SCHRAG[, 19:30]))  # 12
+SCHRAG$emotional_na <- rowSums(is.na(SCHRAG[, 31:44]))  # 14
+
+range(SCHRAG$motor_na)
+range(SCHRAG$non_motor_na)
+range(SCHRAG$emotional_na)
+
+
+SCHRAG <- SCHRAG %>%  ungroup() %>%
+  mutate(SCHRAG_MOTOR_v2= SCHRAG_MOTOR_v2/((14-motor_na)/14) ) %>%
+  mutate(SCHRAG_NONMOTOR_v2= SCHRAG_NONMOTOR_v2/((14-non_motor_na)/14) ) %>%
+  mutate(SCHRAG_EMOTIONAL_v2= SCHRAG_EMOTIONAL_v2/((14-emotional_na)/14) ) %>%
+  mutate(SCHRAG_TOT_v2=SCHRAG_MOTOR_v2+SCHRAG_NONMOTOR_v2+SCHRAG_EMOTIONAL_v2) 
+
+
+Old_SCHRAG
+
+
+New_SCHRAG <- EarlyCT_Pop_Baseline_319 %>% inner_join(SCHRAG) %>% 
+  filter(!is.na(SCHRAG_TOT_v2)) %>%
+  mutate(Elapsed=abs(TIME_STUDY-Year)) %>% 
+  group_by(NUM, Year) %>% filter(Elapsed==min(Elapsed)) %>%
+  group_by(NUM, Year) %>% filter(TIME_STUDY==min(TIME_STUDY)) %>% 
+  group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% inner_join(SCHRAG_Baseline_Pats) %>%
+  anti_join(Old_SCHRAG) %>%
+  select(NUM, Year,number_na,motor_na,non_motor_na,emotional_na)
+
+
+New_SCHRAG %>% filter(Year==0) %>% filter(motor_na!=0) %>%
+  summarise(
+    mean=mean(motor_na),
+    sd=sd(motor_na),
+    median=median(motor_na),
+    Q1 = quantile(motor_na, 0.25),
+    Q3 = quantile(motor_na, 0.75),
+    min=min(motor_na),
+    max=max(motor_na),
+    n=n()
+  )
+
+
+New_SCHRAG %>% filter(Year==1) %>% filter(motor_na!=0) %>%
+  summarise(
+    mean=mean(motor_na),
+    sd=sd(motor_na),
+    median=median(motor_na),
+    Q1 = quantile(motor_na, 0.25),
+    Q3 = quantile(motor_na, 0.75),
+    min=min(motor_na),
+    max=max(motor_na),
+    n=n()
+  )
+
+
+New_SCHRAG %>% filter(Year==2) %>% filter(motor_na!=0) %>%
+  summarise(
+    mean=mean(motor_na),
+    sd=sd(motor_na),
+    median=median(motor_na),
+    Q1 = quantile(motor_na, 0.25),
+    Q3 = quantile(motor_na, 0.75),
+    min=min(motor_na),
+    max=max(motor_na),
+    n=n()
+  )
+
+
+New_SCHRAG %>% filter(Year==3) %>% filter(motor_na!=0) %>%
+  summarise(
+    mean=mean(motor_na),
+    sd=sd(motor_na),
+    median=median(motor_na),
+    Q1 = quantile(motor_na, 0.25),
+    Q3 = quantile(motor_na, 0.75),
+    min=min(motor_na),
+    max=max(motor_na),
+    n=n()
+  )
+
+
+
+New_SCHRAG %>% filter(Year==0) %>% filter(non_motor_na!=0) %>%
+  summarise(
+    mean=mean(non_motor_na),
+    sd=sd(non_motor_na),
+    median=median(non_motor_na),
+    Q1 = quantile(non_motor_na, 0.25),
+    Q3 = quantile(non_motor_na, 0.75),
+    min=min(non_motor_na),
+    max=max(non_motor_na),
+    n=n()
+  )
+
+
+New_SCHRAG %>% filter(Year==1) %>% filter(non_motor_na!=0) %>%
+  summarise(
+    mean=mean(non_motor_na),
+    sd=sd(non_motor_na),
+    median=median(non_motor_na),
+    Q1 = quantile(non_motor_na, 0.25),
+    Q3 = quantile(non_motor_na, 0.75),
+    min=min(non_motor_na),
+    max=max(non_motor_na),
+    n=n()
+  )
+
+
+New_SCHRAG %>% filter(Year==2) %>% filter(non_motor_na!=0) %>%
+  summarise(
+    mean=mean(non_motor_na),
+    sd=sd(non_motor_na),
+    median=median(non_motor_na),
+    Q1 = quantile(non_motor_na, 0.25),
+    Q3 = quantile(non_motor_na, 0.75),
+    min=min(non_motor_na),
+    max=max(non_motor_na),
+    n=n()
+  )
+
+
+New_SCHRAG %>% filter(Year==3) %>% filter(non_motor_na!=0) %>%
+  summarise(
+    mean=mean(non_motor_na),
+    sd=sd(non_motor_na),
+    median=median(non_motor_na),
+    Q1 = quantile(non_motor_na, 0.25),
+    Q3 = quantile(non_motor_na, 0.75),
+    min=min(non_motor_na),
+    max=max(non_motor_na),
+    n=n()
+  )
+
+
+
+
+
+
+
+New_SCHRAG %>% filter(Year==0) %>% filter(emotional_na!=0) %>%
+  summarise(
+    mean=mean(emotional_na),
+    sd=sd(emotional_na),
+    median=median(emotional_na),
+    Q1 = quantile(emotional_na, 0.25),
+    Q3 = quantile(emotional_na, 0.75),
+    min=min(emotional_na),
+    max=max(emotional_na),
+    n=n()
+  )
+
+
+New_SCHRAG %>% filter(Year==1) %>% filter(emotional_na!=0) %>%
+  summarise(
+    mean=mean(emotional_na),
+    sd=sd(emotional_na),
+    median=median(emotional_na),
+    Q1 = quantile(emotional_na, 0.25),
+    Q3 = quantile(emotional_na, 0.75),
+    min=min(emotional_na),
+    max=max(emotional_na),
+    n=n()
+  )
+
+
+New_SCHRAG %>% filter(Year==2) %>% filter(emotional_na!=0) %>%
+  summarise(
+    mean=mean(emotional_na),
+    sd=sd(emotional_na),
+    median=median(emotional_na),
+    Q1 = quantile(emotional_na, 0.25),
+    Q3 = quantile(emotional_na, 0.75),
+    min=min(emotional_na),
+    max=max(emotional_na),
+    n=n()
+  )
+
+
+New_SCHRAG %>% filter(Year==3) %>% filter(emotional_na!=0) %>%
+  summarise(
+    mean=mean(emotional_na),
+    sd=sd(emotional_na),
+    median=median(emotional_na),
+    Q1 = quantile(emotional_na, 0.25),
+    Q3 = quantile(emotional_na, 0.75),
+    min=min(emotional_na),
+    max=max(emotional_na),
+    n=n()
+  )
+
+
+# --------
