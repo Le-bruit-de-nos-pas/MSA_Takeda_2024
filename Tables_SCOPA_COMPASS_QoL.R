@@ -35570,20 +35570,31 @@ SCHRAG_Baseline_Pats <- SCHRAG %>% filter(Year==0) %>% filter(!is.na(SCHRAG_TOT_
   inner_join(AllMSA_Pop_Baseline_671)
 
 
+# UMSARS 1 DA-modified exc. #11
 
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
 
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
 
-
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
-
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
 
 # ----------------
@@ -35625,9 +35636,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>%  #summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  ) %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -35667,9 +35678,9 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -35709,9 +35720,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Yea
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -35753,7 +35764,7 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>% inn
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%#  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
   group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
@@ -35838,9 +35849,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Yea
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # --------------
@@ -35926,19 +35937,31 @@ SCHRAG_Baseline_Pats <- SCHRAG %>% filter(Year==0) %>% filter(!is.na(SCHRAG_TOT_
 
 
 
+# UMSARS 1 DA-modified exc. #11
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
 
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
 
-
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
-
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
 
 # ----------------
@@ -35980,9 +36003,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  ) %>% # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -36022,9 +36045,9 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%#  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -36064,9 +36087,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Yea
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+ #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -36108,9 +36131,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>% inn
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+ #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -36152,9 +36175,9 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)   %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  # group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+   #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # Year 3
@@ -36193,9 +36216,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Yea
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%   summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%   #summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+# group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # --------------
@@ -36281,19 +36304,31 @@ SCHRAG_Baseline_Pats <- SCHRAG %>% filter(Year==0) %>% filter(!is.na(SCHRAG_TOT_
 
 
 
+# UMSARS 1 DA-modified exc. #11
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
 
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
 
-
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
-
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
 
 # ----------------
@@ -36335,9 +36370,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  ) %>% # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+# group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -36377,9 +36412,9 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% #  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%   summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -36419,9 +36454,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Yea
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -36463,9 +36498,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>% inn
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+ #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -36508,7 +36543,7 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)   %>% select(NUM, DIAG, DIAGNIV, Diff)
   )  %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-# group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+ #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
@@ -36548,9 +36583,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Yea
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%   summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  # group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # --------------
@@ -36637,17 +36672,31 @@ SCHRAG_Baseline_Pats <- SCHRAG %>% filter(Year==0) %>% filter(!is.na(SCHRAG_TOT_
 
 
 
+# UMSARS 1 DA-modified exc. #11
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
-
 
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
 
 
@@ -36690,9 +36739,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>%  #summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  ) %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  # group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -36732,9 +36781,9 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%   summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%  # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -36774,9 +36823,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCHRAG) %>% filter(Yea
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  #summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -36818,9 +36867,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>% inn
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% #  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%   summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -36862,9 +36911,9 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)   %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% #summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # Year 3
@@ -36903,9 +36952,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Yea
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%   summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%  # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # --------------
@@ -36992,18 +37041,31 @@ SCHRAG_Baseline_Pats <- SCHRAG %>% filter(Year==0) %>% filter(!is.na(SCHRAG_TOT_
 
 
 
+# UMSARS 1 DA-modified exc. #11
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
-
 
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
-
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
 
 # ----------------
@@ -37046,9 +37108,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCHRAG) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>%  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  ) %>%  #summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -37088,9 +37150,9 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCHRAG) %>% filter(Year==0) %>%
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>%   summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -37174,9 +37236,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCHRAG) %>% filter(Year==0) %>% inn
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%   summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>% #  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+# group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 
@@ -37218,9 +37280,9 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCHRAG) %>% filter(Year==0) %>
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY)   %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>% #summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # Year 3
@@ -37259,9 +37321,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCHRAG) %>% filter(Yea
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)/TIME_STUDY) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  # summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  #group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  )  %>% #  summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  group_by(DIAG) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCHRAG_Diff  , Diff, method="spearman"))
 
 
 # --------------
@@ -55795,18 +55857,31 @@ COMPASS_Baseline_Pats <- COMPASS %>% filter(Year==0) %>% filter(!is.na(COMPASS_T
   inner_join(AllMSA_Pop_Baseline_671)
 
 
+# UMSARS 1 DA-modified exc. #11
+
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
-
 
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
-
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
 
 # ----------------
@@ -55848,9 +55923,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(COMPASS) %>% filter(Year==0) %>% inn
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>% # summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+  ) %>%  summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
 
 
 
@@ -55890,9 +55965,9 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(COMPASS) %>% filter(Year==0) %>
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
-# group_by(DIAG) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+  )  %>% #summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+#group_by(DIAG) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
 
 
 
@@ -55932,9 +56007,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(COMPASS) %>% filter(Ye
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -55977,9 +56052,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(COMPASS) %>% filter(Year==0) %>% in
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+  )  %>%#  summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
 
 
 
@@ -56022,9 +56097,9 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(COMPASS) %>% filter(Year==0) %
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))   %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
 # group_by(DIAG) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
-# group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
 
 
 # Year 3
@@ -56063,9 +56138,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(COMPASS) %>% filter(Ye
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
-# group_by(DIAG) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+ #group_by(DIAG) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(COMPASS_Diff  , Diff, method="spearman"))
 
 
 # --------------
@@ -58857,18 +58932,31 @@ SCOPA_Baseline_Pats <- SCOPA %>% filter(Year==0) %>% filter(!is.na(SCOPA_TOT)) %
 
 
 
+# UMSARS 1 DA-modified exc. #11
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
 
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
 
-
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
+
 
 
 # ----------------
@@ -58909,9 +58997,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inner
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-# group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  ) %>%  #summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -58951,9 +59039,9 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCOPA) %>% filter(Year==0) %>% 
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -58993,9 +59081,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -59038,9 +59126,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+# group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -59083,9 +59171,9 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCOPA) %>% filter(Year==0) %>%
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))   %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+# group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # Year 3
@@ -59124,15 +59212,17 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% #  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+# group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # --------------
 
 
 
+# Missing Correlations -----
+# -----
 # Inputs SCOPA AUT V2 DIGESTIVE ----------------------------------
 
 
@@ -74218,19 +74308,31 @@ SCOPA_Baseline_Pats <- SCOPA %>% filter(Year==0) %>% filter(!is.na(SCOPA_TOT)) %
 
 
 
+# UMSARS 1 DA-modified exc. #11
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
-
 
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
-names(SCOPA)
 
 # ----------------
 # Overall MSA Entire V2 -------------------------------
@@ -74270,9 +74372,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inner
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>% # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  ) %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -74312,9 +74414,9 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCOPA) %>% filter(Year==0) %>% 
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% #  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -74354,9 +74456,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  #summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -74399,9 +74501,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% #summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -74444,9 +74546,9 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCOPA) %>% filter(Year==0) %>%
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))   %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% #  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # Year 3
@@ -74485,9 +74587,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%#  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # --------------
@@ -74564,19 +74666,31 @@ SCOPA_Baseline_Pats <- SCOPA %>% filter(Year==0) %>% filter(!is.na(SCOPA_TOT)) %
 
 
 
+# UMSARS 1 DA-modified exc. #11
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
-
 
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
-names(SCOPA)
 
 # ----------------
 # Overall MSA Entire V2 -------------------------------
@@ -74616,9 +74730,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inner
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>%  #summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  ) %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -74700,9 +74814,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -74745,9 +74859,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% #summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -74790,9 +74904,9 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCOPA) %>% filter(Year==0) %>%
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))   %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%   summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%  # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # Year 3
@@ -74831,9 +74945,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # --------------
@@ -74909,20 +75023,31 @@ SCOPA_Baseline_Pats <- SCOPA %>% filter(Year==0) %>% filter(!is.na(SCOPA_TOT)) %
 
 
 
+# UMSARS 1 DA-modified exc. #11
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
 
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
 
-
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
-names(SCOPA)
 
 # ----------------
 # Overall MSA Entire V2 -------------------------------
@@ -74962,9 +75087,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inner
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  ) %>%  # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -75004,9 +75129,9 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCOPA) %>% filter(Year==0) %>% 
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%   #summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%   summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -75046,9 +75171,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  #summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -75091,9 +75216,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%# summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -75136,9 +75261,9 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCOPA) %>% filter(Year==0) %>%
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))   %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%#   summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # Year 3
@@ -75177,9 +75302,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%# summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # --------------
@@ -75255,20 +75380,31 @@ SCOPA_Baseline_Pats <- SCOPA %>% filter(Year==0) %>% filter(!is.na(SCOPA_TOT)) %
 
 
 
+# UMSARS 1 DA-modified exc. #11
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
 
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
 
-
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
-names(SCOPA)
 
 # ----------------
 # Overall MSA Entire V2 -------------------------------
@@ -75308,9 +75444,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inner
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>%#  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  ) %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -75350,7 +75486,7 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCOPA) %>% filter(Year==0) %>% 
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%   summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
@@ -75392,9 +75528,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -75437,9 +75573,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%# summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+# group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -75482,9 +75618,9 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCOPA) %>% filter(Year==0) %>%
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))   %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%   summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% #  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # Year 3
@@ -75523,9 +75659,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%  # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # --------------
@@ -75600,21 +75736,31 @@ SCOPA_Baseline_Pats <- SCOPA %>% filter(Year==0) %>% filter(!is.na(SCOPA_TOT)) %
   inner_join(AllMSA_Pop_Baseline_671)
 
 
+# UMSARS 1 DA-modified exc. #11
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
 
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
 
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
 
-
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
-names(SCOPA)
 
 # ----------------
 # Overall MSA Entire V2 -------------------------------
@@ -75654,9 +75800,9 @@ AllMSA_Pop_BaselineYear1_410 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inner
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  ) %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  ) %>%  # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+# group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+ group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -75696,9 +75842,9 @@ AllMSA_Pop_BaselineYear1Year2_245 %>% inner_join(SCOPA) %>% filter(Year==0) %>% 
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%#   summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -75738,9 +75884,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%#  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -75783,9 +75929,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% #summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -75828,9 +75974,9 @@ EarlyCT_Pop_BaselineYear1Year2_134 %>% inner_join(SCOPA) %>% filter(Year==0) %>%
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))   %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%#   summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  # group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # Year 3
@@ -75869,9 +76015,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>%# summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
   #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-  group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  #group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # --------------
@@ -75948,19 +76094,31 @@ SCOPA_Baseline_Pats <- SCOPA %>% filter(Year==0) %>% filter(!is.na(SCOPA_TOT)) %
 
 
 
+# UMSARS 1 DA-modified exc. #11
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
+dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
+  mutate(Year= ifelse(TIME_STUDY==0, 0,
+                      ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
+                             ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
+                                    ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
-
 
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
 
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
 
-UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT, UMSARS1_11)
+for (i in 5:16) {
+  UMSARS1[, i][UMSARS1[, i] < 0] <- 0
+}
 
-UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT-UMSARS1_11)
+UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+UMSARS1 <-  UMSARS1 %>%  select(NUM, TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+UMSARS1 <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
 
-names(SCOPA)
 
 # ----------------
 # Overall MSA Entire V2 -------------------------------
@@ -76084,9 +76242,9 @@ AllMSA_Pop_BaselineYear1Year2Year3Plus_158 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% #summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 #group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # -----------------------------
@@ -76129,9 +76287,9 @@ EarlyCT_Pop_BaselineYear1_208 %>% inner_join(SCOPA) %>% filter(Year==0) %>% inne
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline))  %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-# group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>%#  summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 
@@ -76215,9 +76373,9 @@ EarlyCT_Pop_BaselineYear1Year2Year3Plus_99 %>% inner_join(SCOPA) %>% filter(Year
           group_by(NUM, Year) %>% slice(1) %>% ungroup() %>% select(NUM, DIAG, DIAGNIV, TIME_STUDY, UMSARS1_TOT_FDA)
       ) %>% 
       mutate(Diff= (UMSARS1_TOT_FDA-Baseline)) %>% select(NUM, DIAG, DIAGNIV, Diff)
-  )  %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
-#group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+  )  %>% # summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+# group_by(DIAG) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
+group_by(DIAGNIV) %>% summarise(cor=cor(SCOPA_Diff  , Diff, method="spearman"))
 
 
 # --------------
