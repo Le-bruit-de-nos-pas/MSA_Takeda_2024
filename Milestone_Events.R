@@ -4,17 +4,14 @@ library(tidyverse)
 library(data.table)
 
 # PART 1 Kaplan-Meier curves  -------------------
-
-
-
 AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
 EarlyCT_Pop_Baseline_319 <- fread("Source/EarlyCT_Pop_Baseline_319.txt")
 
-
 # MORTALITY STATUS
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
-dataCohorteManaged <- dataCohorteManaged %>% select(NUM, TIME_STUDY, DATE_VISITE0, DATECONSULT, DATE_DERVISITE, DATEDC, DC)
-dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% filter(DATECONSULT==DATE_DERVISITE)
+dataCohorteManaged <- dataCohorteManaged %>% 
+  select(NUM, TIME_STUDY, DATE_VISITE0, DATECONSULT, DATE_DERVISITE, DATEDC, DC) %>% 
+  group_by(NUM) %>% filter(DATECONSULT==DATE_DERVISITE)
 
 Mortalities <- dataCohorteManaged %>% filter(!is.na(DATEDC)) %>% select(-c(DATE_DERVISITE, DATECONSULT)) %>% mutate(DC=1) %>%
   bind_rows(
@@ -31,16 +28,17 @@ elapsed_months <- function(end_date, start_date) {
   12 * (ed$year - sd$year) + (ed$mon - sd$mon)
 }
 
-Mortalities <- Mortalities %>% mutate(elapsed=elapsed_months(DATEDC, DATE_VISITE0))
-Mortalities <- Mortalities %>% select(NUM, DC, elapsed)
+Mortalities <- Mortalities %>% mutate(elapsed=elapsed_months(DATEDC, DATE_VISITE0)) %>% select(NUM, DC, elapsed)
 Mortalities$DC <- Mortalities$DC + 1
 unique(Mortalities$DC)
+range(Mortalities$elapsed, na.rm=T)
+Mortalities <- Mortalities %>% mutate(elapsed=ifelse(elapsed==0,1,elapsed)) # deal with those having 1 visit only
+
 
 
 # GASTRO
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
 dataCohorteManaged <- dataCohorteManaged %>% select(NUM, DATE_VISITE0, DATE_GASTRO, DATE_DERVISITE) %>% distinct()
-
 
 Gastros <- dataCohorteManaged %>% filter(!is.na(DATE_GASTRO)) %>% select(-c(DATE_DERVISITE)) %>% mutate(GASTRO=1) %>%
   bind_rows(
@@ -52,26 +50,25 @@ Gastros <- dataCohorteManaged %>% filter(!is.na(DATE_GASTRO)) %>% select(-c(DATE
   )
 
 
-Gastros %>% group_by(GASTRO) %>% count()
-
 elapsed_months <- function(end_date, start_date) {
   ed <- as.POSIXlt(end_date)
   sd <- as.POSIXlt(start_date)
   12 * (ed$year - sd$year) + (ed$mon - sd$mon)
 }
 
-Gastros <- Gastros %>% mutate(elapsed=elapsed_months(DATE_GASTRO, DATE_VISITE0))
-Gastros <- Gastros %>% select(NUM, GASTRO, elapsed)
+Gastros <- Gastros %>% mutate(elapsed=elapsed_months(DATE_GASTRO, DATE_VISITE0)) %>% select(NUM, GASTRO, elapsed)
 Gastros$GASTRO <- Gastros$GASTRO + 1
 unique(Gastros$GASTRO)
+
+Gastros <- Gastros %>% filter(elapsed>0) # Remove those already meeting the criterion AT BASELINE
 
 
 # UMSARS 1 Item 1	Unintelligible speech
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
 UMSARS1_Item_1 <- dataCohorteManaged %>%  select(NUM, DATE_VISITE0, DATECONSULT, DATE_DERVISITE, UMSARS1_1)
-Speech <- UMSARS1_Item_1 %>% filter(UMSARS1_1>=3) %>% select(NUM) %>% distinct() %>% mutate(Speech=1)
+Speech <- UMSARS1_Item_1 %>% filter(UMSARS1_1>=4) %>% select(NUM) %>% distinct() %>% mutate(Speech=1)
 
-Speech <- Speech %>% left_join(UMSARS1_Item_1) %>% filter(UMSARS1_1>=3) %>% group_by(NUM) %>% filter(DATECONSULT==min(DATECONSULT)) %>%
+Speech <- Speech %>% left_join(UMSARS1_Item_1) %>% filter(UMSARS1_1>=4) %>% group_by(NUM) %>% filter(DATECONSULT==min(DATECONSULT)) %>%
   select(NUM, Speech, DATE_VISITE0, DATECONSULT) 
 
 No <- UMSARS1_Item_1 %>% anti_join(Speech %>% select(NUM)) %>% 
@@ -88,19 +85,46 @@ elapsed_months <- function(end_date, start_date) {
   12 * (ed$year - sd$year) + (ed$mon - sd$mon)
 }
 
-Speech <- Speech %>% mutate(elapsed=elapsed_months(DATECONSULT, DATE_VISITE0))
-Speech <- Speech %>% select(NUM, Speech, elapsed)
+Speech <- Speech %>% mutate(elapsed=elapsed_months(DATECONSULT, DATE_VISITE0)) %>% select(NUM, Speech, elapsed)
 Speech$Speech <- Speech$Speech + 1
-unique(Speech$Speech)
+range(Speech$elapsed, na.rm=T)
+Speech <- Speech %>% filter(elapsed>0) # Remove those already meeting the criterion AT BASELINE
 
+
+# UMSARS 1 Item 2	Swallowing
+dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+UMSARS1_Item_2 <- dataCohorteManaged %>%  select(NUM, DATE_VISITE0, DATECONSULT, DATE_DERVISITE, UMSARS1_2)
+Swallowing <- UMSARS1_Item_2 %>% filter(UMSARS1_2>=4) %>% select(NUM) %>% distinct() %>% mutate(Swallowing=1)
+
+Swallowing <- Swallowing %>% left_join(UMSARS1_Item_2) %>% filter(UMSARS1_2>=4) %>% group_by(NUM) %>% filter(DATECONSULT==min(DATECONSULT)) %>%
+  select(NUM, Swallowing, DATE_VISITE0, DATECONSULT) 
+
+No <- UMSARS1_Item_2 %>% anti_join(Swallowing %>% select(NUM)) %>% 
+  mutate(Swallowing=0) %>% filter(DATECONSULT==DATE_DERVISITE) %>%
+  select(NUM, Swallowing, DATE_VISITE0, DATECONSULT)
+
+Swallowing <- Swallowing %>% bind_rows(No)
+
+Swallowing %>% group_by(Swallowing) %>% count()
+
+elapsed_months <- function(end_date, start_date) {
+  ed <- as.POSIXlt(end_date)
+  sd <- as.POSIXlt(start_date)
+  12 * (ed$year - sd$year) + (ed$mon - sd$mon)
+}
+
+Swallowing <- Swallowing %>% mutate(elapsed=elapsed_months(DATECONSULT, DATE_VISITE0)) %>% select(NUM, Swallowing, elapsed)
+Swallowing$Swallowing <- Swallowing$Swallowing + 1
+range(Swallowing$elapsed, na.rm=T)
+Swallowing <- Swallowing %>% filter(elapsed>0)  # Remove those already meeting the criterion AT BASELINE
 
 
 # UMSARS 1 Item 7	Inability to walk
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
 UMSARS1_Item_7 <- dataCohorteManaged %>%  select(NUM, DATE_VISITE0, DATECONSULT, DATE_DERVISITE, UMSARS1_7)
-Walk <- UMSARS1_Item_7 %>% filter(UMSARS1_7>=3) %>% select(NUM) %>% distinct() %>% mutate(Walk=1)
+Walk <- UMSARS1_Item_7 %>% filter(UMSARS1_7>=4) %>% select(NUM) %>% distinct() %>% mutate(Walk=1)
 
-Walk <- Walk %>% left_join(UMSARS1_Item_7) %>% filter(UMSARS1_7>=3) %>% group_by(NUM) %>% filter(DATECONSULT==min(DATECONSULT)) %>%
+Walk <- Walk %>% left_join(UMSARS1_Item_7) %>% filter(UMSARS1_7>=4) %>% group_by(NUM) %>% filter(DATECONSULT==min(DATECONSULT)) %>%
   select(NUM, Walk, DATE_VISITE0, DATECONSULT) 
 
 No <- UMSARS1_Item_7 %>% anti_join(Walk %>% select(NUM)) %>% 
@@ -117,10 +141,9 @@ elapsed_months <- function(end_date, start_date) {
   12 * (ed$year - sd$year) + (ed$mon - sd$mon)
 }
 
-Walk <- Walk %>% mutate(elapsed=elapsed_months(DATECONSULT, DATE_VISITE0))
-Walk <- Walk %>% select(NUM, Walk, elapsed)
+Walk <- Walk %>% mutate(elapsed=elapsed_months(DATECONSULT, DATE_VISITE0)) %>% select(NUM, Walk, elapsed)
 Walk$Walk <- Walk$Walk + 1
-unique(Walk$Walk)
+Walk <- Walk %>% filter(elapsed>0) # Remove those already meeting the criterion AT BASELINE
 
 
 
@@ -147,17 +170,34 @@ elapsed_months <- function(end_date, start_date) {
   12 * (ed$year - sd$year) + (ed$mon - sd$mon)
 }
 
-Falls <- Falls %>% mutate(elapsed=elapsed_months(DATECONSULT, DATE_VISITE0))
-Falls <- Falls %>% select(NUM, Falls, elapsed)
+Falls <- Falls %>% mutate(elapsed=elapsed_months(DATECONSULT, DATE_VISITE0)) %>% select(NUM, Falls, elapsed)
 Falls$Falls <- Falls$Falls + 1
-unique(Falls$Falls)
+Falls <- Falls %>% filter(elapsed>0) # Remove those already meeting the criterion AT BASELINE
 
 
 Mortalities <- Mortalities %>% inner_join(AllMSA_Pop_Baseline_671 %>% select(NUM))
 Gastros <- Gastros %>% inner_join(AllMSA_Pop_Baseline_671 %>% select(NUM))
+Swallowing <- Swallowing %>% inner_join(AllMSA_Pop_Baseline_671 %>% select(NUM))
 Speech <- Speech %>% inner_join(AllMSA_Pop_Baseline_671 %>% select(NUM))
 Walk <- Walk %>% inner_join(AllMSA_Pop_Baseline_671 %>% select(NUM))
 Falls <- Falls %>% inner_join(AllMSA_Pop_Baseline_671 %>% select(NUM))
+
+
+Mortalities <- Mortalities %>% drop_na()
+Gastros <- Gastros %>% drop_na()
+Swallowing <- Swallowing %>% drop_na()
+Speech <- Speech %>% drop_na()
+Walk <- Walk %>% drop_na()
+Falls <- Falls %>% drop_na()
+
+
+length(unique(Mortalities$NUM)) # 668
+length(unique(Gastros$NUM)) # 468 
+length(unique(Swallowing$NUM)) # 466
+length(unique(Speech$NUM))  # 462
+length(unique(Walk$NUM))  # 455
+length(unique(Falls$NUM))  # 437 
+
 
 fit <- survfit(Surv(elapsed, DC) ~ 1, data = Mortalities)
 print(fit)
@@ -166,7 +206,7 @@ ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
            surv.median.line = "hv", 
            cumevents = TRUE,
-           cumcensor = TRUE,
+           #cumcensor = TRUE,
            break.time.by = 12,
            xlab = "\n Elapsed Time (months)",
            risk.table = TRUE,  
@@ -187,7 +227,7 @@ ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
            surv.median.line = "hv", 
            cumevents = TRUE,
-           cumcensor = TRUE,
+           #cumcensor = TRUE,
            break.time.by = 12,
            xlab = "\n Elapsed Time (months)",
            risk.table = TRUE,  
@@ -200,6 +240,25 @@ ggsurvplot(fit, conf.int = TRUE,
 
 
 
+fit <- survfit(Surv(elapsed, Swallowing) ~ 1, data = Swallowing)
+print(fit)
+# 800 vs 1200
+ggsurvplot(fit, conf.int = TRUE,
+           linetype = 1, 
+           surv.median.line = "hv", 
+           cumevents = TRUE,
+           #cumcensor = TRUE,
+           break.time.by = 12,
+           xlab = "\n Elapsed Time (months)",
+           risk.table = TRUE,  
+           risk.table.y.text.col = TRUE,
+           ggtheme = theme_minimal(), 
+           tables.theme = theme_minimal(),
+           tables.height = 0.1 ,
+           title = "Swallowing: Overall MSA",
+           palette = c("#00468B", "#D45769"))
+
+
 
 fit <- survfit(Surv(elapsed, Speech) ~ 1, data = Speech)
 print(fit)
@@ -208,7 +267,7 @@ ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
            surv.median.line = "hv", 
            cumevents = TRUE,
-           cumcensor = TRUE,
+           #cumcensor = TRUE,
            break.time.by = 12,
            xlab = "\n Elapsed Time (months)",
            risk.table = TRUE,  
@@ -227,7 +286,7 @@ ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
            surv.median.line = "hv", 
            cumevents = TRUE,
-           cumcensor = TRUE,
+           #cumcensor = TRUE,
            break.time.by = 12,
            xlab = "\n Elapsed Time (months)",
            risk.table = TRUE,  
@@ -246,7 +305,7 @@ ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
            surv.median.line = "hv", 
            cumevents = TRUE,
-           cumcensor = TRUE,
+           #cumcensor = TRUE,
            break.time.by = 12,
            xlab = "\n Elapsed Time (months)",
            risk.table = TRUE,  
@@ -268,6 +327,7 @@ ggsurvplot(fit, conf.int = TRUE,
 
 Mortalities <- Mortalities %>% inner_join(EarlyCT_Pop_Baseline_319 %>% select(NUM))
 Gastros <- Gastros %>% inner_join(EarlyCT_Pop_Baseline_319 %>% select(NUM))
+Swallowing <- Swallowing %>% inner_join(EarlyCT_Pop_Baseline_319 %>% select(NUM))
 Speech <- Speech %>% inner_join(EarlyCT_Pop_Baseline_319 %>% select(NUM))
 Walk <- Walk %>% inner_join(EarlyCT_Pop_Baseline_319 %>% select(NUM))
 Falls <- Falls %>% inner_join(EarlyCT_Pop_Baseline_319 %>% select(NUM))
@@ -279,7 +339,7 @@ ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
            surv.median.line = "hv", 
            cumevents = TRUE,
-           cumcensor = TRUE,
+           #cumcensor = TRUE,
            break.time.by = 12,
            xlab = "\n Elapsed Time (months)",
            risk.table = TRUE,  
@@ -287,7 +347,7 @@ ggsurvplot(fit, conf.int = TRUE,
            ggtheme = theme_minimal(), 
            tables.theme = theme_minimal(),
            tables.height = 0.1 ,
-           title = "Mortality: Early CT MSA",
+           title = "Mortality: Target Takeda MSA",
            palette = c( "#D45769"))
 
 
@@ -300,7 +360,7 @@ ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
            surv.median.line = "hv", 
            cumevents = TRUE,
-           cumcensor = TRUE,
+           #cumcensor = TRUE,
            break.time.by = 12,
            xlab = "\n Elapsed Time (months)",
            risk.table = TRUE,  
@@ -308,10 +368,29 @@ ggsurvplot(fit, conf.int = TRUE,
            ggtheme = theme_minimal(), 
            tables.theme = theme_minimal(),
            tables.height = 0.1 ,
-           title = "Gastrostomy: Early CT MSA",
+           title = "Gastrostomy: Target Takeda MSA",
            palette = c( "#D45769"))
 
 
+
+
+fit <- survfit(Surv(elapsed, Swallowing) ~ 1, data = Swallowing)
+print(fit)
+# 800 vs 1200
+ggsurvplot(fit, conf.int = TRUE,
+           linetype = 1, 
+           surv.median.line = "hv", 
+           cumevents = TRUE,
+           #cumcensor = TRUE,
+           break.time.by = 12,
+           xlab = "\n Elapsed Time (months)",
+           risk.table = TRUE,  
+           risk.table.y.text.col = TRUE,
+           ggtheme = theme_minimal(), 
+           tables.theme = theme_minimal(),
+           tables.height = 0.1 ,
+           title = "Swallowing: Target Takeda MSA",
+           palette = c( "#D45769"))
 
 
 fit <- survfit(Surv(elapsed, Speech) ~ 1, data = Speech)
@@ -321,7 +400,7 @@ ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
            surv.median.line = "hv", 
            cumevents = TRUE,
-           cumcensor = TRUE,
+           #cumcensor = TRUE,
            break.time.by = 12,
            xlab = "\n Elapsed Time (months)",
            risk.table = TRUE,  
@@ -329,7 +408,7 @@ ggsurvplot(fit, conf.int = TRUE,
            ggtheme = theme_minimal(), 
            tables.theme = theme_minimal(),
            tables.height = 0.1 ,
-           title = "Unintelligible speech: Early CT MSA",
+           title = "Unintelligible speech: Target Takeda MSA",
            palette = c( "#D45769"))
 
 
@@ -340,7 +419,7 @@ ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
            surv.median.line = "hv", 
            cumevents = TRUE,
-           cumcensor = TRUE,
+           #cumcensor = TRUE,
            break.time.by = 12,
            xlab = "\n Elapsed Time (months)",
            risk.table = TRUE,  
@@ -348,7 +427,7 @@ ggsurvplot(fit, conf.int = TRUE,
            ggtheme = theme_minimal(), 
            tables.theme = theme_minimal(),
            tables.height = 0.1 ,
-           title = "Inability to walk: Early CT MSA",
+           title = "Inability to walk: Target Takeda MSA",
            palette = c( "#D45769"))
 
 
@@ -359,7 +438,7 @@ ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
            surv.median.line = "hv", 
            cumevents = TRUE,
-           cumcensor = TRUE,
+           #cumcensor = TRUE,
            break.time.by = 12,
            xlab = "\n Elapsed Time (months)",
            risk.table = TRUE,  
@@ -367,7 +446,7 @@ ggsurvplot(fit, conf.int = TRUE,
            ggtheme = theme_minimal(), 
            tables.theme = theme_minimal(),
            tables.height = 0.1 ,
-           title = "Falls: Early CT MSA",
+           title = "Falls: Target Takeda MSA",
            palette = c("#D45769"))
 
 

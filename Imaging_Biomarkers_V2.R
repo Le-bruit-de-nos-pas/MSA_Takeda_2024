@@ -10,7 +10,7 @@ options(scipen = 999)
 
 irmForPaulo <- readRDS("Source/irmForPaulo.rds")
 names(irmForPaulo)
-
+length(unique(irmForPaulo$NUM))
 irmForPaulo <- irmForPaulo %>% select(NUM, DateIRM,
                        Left_Putamen, 
                        Right_Putamen, 
