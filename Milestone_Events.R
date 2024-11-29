@@ -225,7 +225,7 @@ print(fit)
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
-           surv.median.line = "hv", 
+           #surv.median.line = "hv", 
            cumevents = TRUE,
            #cumcensor = TRUE,
            break.time.by = 12,
@@ -299,7 +299,7 @@ ggsurvplot(fit, conf.int = TRUE,
 
 
 fit <- survfit(Surv(elapsed, Falls) ~ 1, data = Falls)
-summary(fit)
+print(fit)
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -432,7 +432,7 @@ ggsurvplot(fit, conf.int = TRUE,
 
 
 fit <- survfit(Surv(elapsed, Falls) ~ 1, data = Falls)
-summary(fit)
+print(fit)
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -458,38 +458,54 @@ ggsurvplot(fit, conf.int = TRUE,
 
 # BASELINE UMSARS 1
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
 dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
   mutate(Year= ifelse(TIME_STUDY==0, 0,
                       ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
                              ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
                                     ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
 UMSARS1 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS1_1:UMSARS1_TOT)
+
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+
 UMSARS1$missing_na <- rowSums(is.na(UMSARS1[, 5:16]))
+
 UMSARS1[, 5:16] <- UMSARS1[, 5:16] -1
+
 for (i in 5:16) {
   UMSARS1[, i][UMSARS1[, i] < 0] <- 0
 }
+
 UMSARS1$UMSARS1_TOT_v2 <- rowSums(UMSARS1[, 5:16], na.rm = TRUE)
+
 UMSARS1 <-  UMSARS1 %>%  select(NUM,DATECONSULT,  TIME_STUDY, Year, UMSARS1_TOT_v2, UMSARS1_11)
+
 UMSARS1_FDA <- UMSARS1 %>% mutate(UMSARS1_TOT_FDA=UMSARS1_TOT_v2-UMSARS1_11)
+
 Baseline_UMSARS_1 <- UMSARS1_FDA %>% group_by(NUM) %>% filter(DATECONSULT==min(DATECONSULT)) %>%
   select(NUM, UMSARS1_TOT_v2 , UMSARS1_TOT_FDA )
 
 
 # BASELINE UMSARS 2
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
 dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
   mutate(Year= ifelse(TIME_STUDY==0, 0,
                       ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
                              ifelse(TIME_STUDY>=1.5 & TIME_STUDY<2.5, 2,
                                     ifelse(TIME_STUDY>=2.5 ,3, NA))))) 
+
 UMSARS2 <- dataCohorteManaged %>% 
   select(NUM, DATECONSULT, TIME_STUDY, Year, UMSARS2_1:UMSARS2_TOT)
+
 UMSARS2$UMSARS2_TOT_v2 <- rowSums(UMSARS2[, 5:19], na.rm = TRUE)
+
 UMSARS2$missing_na <- rowSums(is.na(UMSARS2[, 5:19]))
+
 UMSARS2 <-  UMSARS2 %>%  select(NUM, DATECONSULT,  TIME_STUDY, Year, UMSARS2_TOT)
+
 Baseline_UMSARS2 <- UMSARS2 %>% group_by(NUM) %>% filter(DATECONSULT==min(DATECONSULT)) %>%
   select(NUM, UMSARS2_TOT )
 
@@ -497,6 +513,7 @@ Baseline_UMSARS2 <- UMSARS2 %>% group_by(NUM) %>% filter(DATECONSULT==min(DATECO
 
 # BASELINE UMSARS 9-item 11-item
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
 dataCohorteManaged <- dataCohorteManaged %>% group_by(NUM) %>% mutate(TIME_STUDY = ifelse( is.na(TIME_STUDY), 0, TIME_STUDY)) %>%
   mutate(Year= ifelse(TIME_STUDY==0, 0,
                       ifelse(TIME_STUDY>=0.5 & TIME_STUDY<1.5 , 1,
@@ -511,20 +528,30 @@ UMSARS_9it_11it <- dataCohorteManaged %>%
 
 # AGE GENDER SUBGROUPS
 AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
+
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
 dataCohorteManaged <- dataCohorteManaged %>% select(NUM, AGE_VISITE0, SEXE) %>% distinct() %>% drop_na()
+
 Baselines <- dataCohorteManaged %>% inner_join(AllMSA_Pop_Baseline_671) %>% inner_join(UMSARS_9it_11it) %>%
   inner_join(Baseline_UMSARS_1) %>% inner_join(Baseline_UMSARS2)
 
 
 # TIME SINCE 1st Symptoms
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
+
 dataCohorteManaged <- dataCohorteManaged %>% select(NUM, DELAI_sympt_vis0)
+
 Delay_First_Symptoms <- dataCohorteManaged %>% group_by(NUM) %>% filter(DELAI_sympt_vis0==min(DELAI_sympt_vis0)) %>% distinct()
+
 Baselines <- Baselines %>% inner_join(Delay_First_Symptoms)
+
 Baselines <- Baselines %>% drop_na()
 
 Baselines
+
+
+
 
 
 # MORTALITY STATUS
@@ -551,12 +578,15 @@ elapsed_months <- function(end_date, start_date) {
 Mortalities <- Mortalities %>% mutate(elapsed=elapsed_months(DATEDC, DATE_VISITE0))
 Mortalities <- Mortalities %>% select(NUM, DC, elapsed)
 
+range(Mortalities$elapsed, na.rm=T)
+
+Mortalities <- Mortalities %>% mutate(elapsed=ifelse(elapsed==0,1,elapsed)) # deal with those having 1 visit only
+
 Mortalities <- Mortalities %>% inner_join(Baselines)
 
 Mortalities <- Mortalities %>% 
   mutate(DIAG=ifelse(DIAG=="CB", 1, 2)) %>%
   mutate(DIAGNIV=ifelse(DIAGNIV=="POS", 1, 2)) 
-
 
 covariates <- c("AGE_VISITE0", "SEXE",  "DIAG", "DIAGNIV", "DELAI_sympt_vis0", "UMSARS1_TOT_v2")
 
@@ -582,6 +612,7 @@ univ_results <- lapply(univ_models,
                          return(res)
                          #return(exp(cbind(coef(x),confint(x))))
                        })
+
 res <- t(as.data.frame(univ_results, check.names = FALSE))
 
 as.data.frame(res)
@@ -589,12 +620,10 @@ as.data.frame(res)
 AllMSA_Pop_Baseline_671 <- fread("Source/AllMSA_Pop_Baseline_671.txt")
 EarlyCT_Pop_Baseline_319 <- fread("Source/EarlyCT_Pop_Baseline_319.txt")
 
-
 Mortalities$DC <- Mortalities$DC + 1
 
 Mortalities_all <- Mortalities %>% inner_join(AllMSA_Pop_Baseline_671 %>% select(NUM))
 Mortalities_early <- Mortalities %>% inner_join(EarlyCT_Pop_Baseline_319 %>% select(NUM))
-
 
 
 res.cox <- coxph(Surv(elapsed, DC) ~ AGE_VISITE0 + SEXE + DIAG + DIAGNIV + DELAI_sympt_vis0 + UMSARS1_TOT_v2, data =  Mortalities)
