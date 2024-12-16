@@ -10,7 +10,7 @@ EarlyCT_Pop_Baseline_319 <- fread("Source/EarlyCT_Pop_Baseline_319.txt")
 # MORTALITY STATUS
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
 dataCohorteManaged <- dataCohorteManaged %>% 
-  select(NUM, TIME_STUDY, DATE_VISITE0, DATECONSULT, DATE_DERVISITE, DATEDC, DC) %>% 
+  select(NUM, DATE_VISITE0, DATECONSULT, DATE_DERVISITE, DATEDC, DC) %>% 
   group_by(NUM) %>% filter(DATECONSULT==DATE_DERVISITE)
 
 Mortalities <- dataCohorteManaged %>% filter(!is.na(DATEDC)) %>% select(-c(DATE_DERVISITE, DATECONSULT)) %>% mutate(DC=1) %>%
@@ -29,12 +29,13 @@ elapsed_months <- function(end_date, start_date) {
 }
 
 Mortalities <- Mortalities %>% mutate(elapsed=elapsed_months(DATEDC, DATE_VISITE0)) %>% select(NUM, DC, elapsed)
-Mortalities$DC <- Mortalities$DC + 1
+Mortalities$DC <- Mortalities$DC
 unique(Mortalities$DC)
 range(Mortalities$elapsed, na.rm=T)
 Mortalities <- Mortalities %>% mutate(elapsed=ifelse(elapsed==0,1,elapsed)) # deal with those having 1 visit only
 
-
+Mortalities %>% filter(NUM=="1AMJEA0354")
+      
 
 # GASTRO
 dataCohorteManaged <- readRDS("Source/dataCohorteManaged.rds")
@@ -57,7 +58,7 @@ elapsed_months <- function(end_date, start_date) {
 }
 
 Gastros <- Gastros %>% mutate(elapsed=elapsed_months(DATE_GASTRO, DATE_VISITE0)) %>% select(NUM, GASTRO, elapsed)
-Gastros$GASTRO <- Gastros$GASTRO + 1
+Gastros$GASTRO <- Gastros$GASTRO 
 unique(Gastros$GASTRO)
 
 Gastros <- Gastros %>% filter(elapsed>0) # Remove those already meeting the criterion AT BASELINE
@@ -86,7 +87,7 @@ elapsed_months <- function(end_date, start_date) {
 }
 
 Speech <- Speech %>% mutate(elapsed=elapsed_months(DATECONSULT, DATE_VISITE0)) %>% select(NUM, Speech, elapsed)
-Speech$Speech <- Speech$Speech + 1
+Speech$Speech <- Speech$Speech 
 range(Speech$elapsed, na.rm=T)
 Speech <- Speech %>% filter(elapsed>0) # Remove those already meeting the criterion AT BASELINE
 
@@ -114,7 +115,7 @@ elapsed_months <- function(end_date, start_date) {
 }
 
 Swallowing <- Swallowing %>% mutate(elapsed=elapsed_months(DATECONSULT, DATE_VISITE0)) %>% select(NUM, Swallowing, elapsed)
-Swallowing$Swallowing <- Swallowing$Swallowing + 1
+Swallowing$Swallowing <- Swallowing$Swallowing
 range(Swallowing$elapsed, na.rm=T)
 Swallowing <- Swallowing %>% filter(elapsed>0)  # Remove those already meeting the criterion AT BASELINE
 
@@ -142,7 +143,7 @@ elapsed_months <- function(end_date, start_date) {
 }
 
 Walk <- Walk %>% mutate(elapsed=elapsed_months(DATECONSULT, DATE_VISITE0)) %>% select(NUM, Walk, elapsed)
-Walk$Walk <- Walk$Walk + 1
+Walk$Walk <- Walk$Walk 
 Walk <- Walk %>% filter(elapsed>0) # Remove those already meeting the criterion AT BASELINE
 
 
@@ -171,7 +172,7 @@ elapsed_months <- function(end_date, start_date) {
 }
 
 Falls <- Falls %>% mutate(elapsed=elapsed_months(DATECONSULT, DATE_VISITE0)) %>% select(NUM, Falls, elapsed)
-Falls$Falls <- Falls$Falls + 1
+Falls$Falls <- Falls$Falls 
 Falls <- Falls %>% filter(elapsed>0) # Remove those already meeting the criterion AT BASELINE
 
 
@@ -197,6 +198,19 @@ length(unique(Swallowing$NUM)) # 466
 length(unique(Speech$NUM))  # 462
 length(unique(Walk$NUM))  # 455
 length(unique(Falls$NUM))  # 437 
+
+
+Mortalities <- Mortalities %>% ungroup()
+
+
+fwrite(Mortalities[,2:3], "Mortality_overall.csv")
+fwrite(Gastros[,2:3], "Gastros_overall.csv")
+fwrite(Swallowing[,2:3], "Swallowing_overall.csv")
+fwrite(Speech[,2:3], "Speech_overall.csv")
+fwrite(Walk[,2:3], "Walk_overall.csv")
+fwrite(Falls[,2:3], "Falls_overall.csv")
+
+
 
 
 fit <- survfit(Surv(elapsed, DC) ~ 1, data = Mortalities)
@@ -237,6 +251,10 @@ ggsurvplot(fit, conf.int = TRUE,
            tables.height = 0.1 ,
            title = "Gastrostomy: Overall MSA",
            palette = c("#00468B", "#D45769"))
+
+
+
+
 
 
 
@@ -331,6 +349,16 @@ Swallowing <- Swallowing %>% inner_join(EarlyCT_Pop_Baseline_319 %>% select(NUM)
 Speech <- Speech %>% inner_join(EarlyCT_Pop_Baseline_319 %>% select(NUM))
 Walk <- Walk %>% inner_join(EarlyCT_Pop_Baseline_319 %>% select(NUM))
 Falls <- Falls %>% inner_join(EarlyCT_Pop_Baseline_319 %>% select(NUM))
+
+
+fwrite(Mortalities[,2:3], "Mortality_target_msa.csv")
+fwrite(Gastros[,2:3], "Gastros_target_msa.csv")
+fwrite(Swallowing[,2:3], "Swallowing_target_msa.csv")
+fwrite(Speech[,2:3], "Speech_target_msa.csv")
+fwrite(Walk[,2:3], "Walk_target_msa.csv")
+fwrite(Falls[,2:3], "Falls_target_msa.csv")
+
+
 
 fit <- survfit(Surv(elapsed, DC) ~ 1, data = Mortalities)
 print(fit)
