@@ -212,9 +212,20 @@ fwrite(Falls[,2:3], "Falls_overall.csv")
 
 
 
+Mortality_overall <- fread( "Mortality_overall.csv")
+Gastros_overall <- fread( "Gastros_overall.csv")
+Swallowing_overall <- fread( "Swallowing_overall.csv")
+Speech_overall <- fread( "Speech_overall.csv")
+Walk_overall <- fread( "Walk_overall.csv")
+Falls_overall <- fread( "Falls_overall.csv")
+
+
+
+
 
 fit <- survfit(Surv(elapsed, DC) ~ 1, data = Mortalities)
 print(fit)
+summary(fit)
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -230,6 +241,10 @@ ggsurvplot(fit, conf.int = TRUE,
            tables.height = 0.1 ,
            title = "Mortality: Overall MSA",
            palette = c("#00468B", "#D45769"))
+
+
+
+
 
 
 
@@ -481,6 +496,67 @@ ggsurvplot(fit, conf.int = TRUE,
 
 # --------------------
 
+# Plot cum events cum sum and at risk -----------
+
+Mortality_overall <- fread( "Mortality_overall.csv")
+Gastros_overall <- fread( "Gastros_overall.csv")
+Swallowing_overall <- fread( "Swallowing_overall.csv")
+Speech_overall <- fread( "Speech_overall.csv")
+Walk_overall <- fread( "Walk_overall.csv")
+Falls_overall <- fread( "Falls_overall.csv")
+
+
+
+Mortality_target_msa <- fread( "Mortality_target_msa.csv")
+Gastros_target_msa <- fread( "Gastros_target_msa.csv")
+Swallowing_target_msa <- fread( "Swallowing_target_msa.csv")
+Speech_target_msa <- fread( "Speech_target_msa.csv")
+Walk_target_msa <- fread( "Walk_target_msa.csv")
+Falls_target_msa <- fread( "Falls_target_msa.csv")
+
+
+
+# Sort data by elapsed time
+Falls_target_msa <- Falls_target_msa[order(elapsed)]
+
+# Calculate cumulative events, cumulative censoring, and number at risk
+Falls_target_msa[, `:=`(
+  cum_events = cumsum(Falls    == 1),
+  cum_censoring = cumsum(Falls    == 0),
+  at_risk = .N:1
+)]
+
+# Prepare data for plotting
+data_long <- melt(
+  Falls_target_msa,
+  id.vars = "elapsed",
+  measure.vars = c("cum_events", "cum_censoring", "at_risk"),
+  variable.name = "Metric",
+  value.name = "Count"
+)
+
+
+# Create the plot
+ggplot(data_long, aes(x = elapsed, y = Count, color = Metric)) +
+  geom_line(size = 2, alpha=0.8) +
+  labs(
+    title = "Target MSA Falls",
+    x = "\n Elapsed Time (months)",
+    y = "Patient count \n",
+    color = "Metric"
+  ) +
+  theme_minimal() +
+  scale_colour_manual(values = c("firebrick", "deepskyblue4", "darkgray")) 
+
+
+data_long <- data_long %>% group_by(elapsed, Metric) %>% mutate(Count=ifelse(Metric=="cum_events", max(Count),
+                                                                             ifelse(Metric=="cum_censoring", max(Count), min(Count)))) %>%
+  distinct() %>%
+  spread(key=Metric, value=Count) %>% ungroup() %>% mutate(Total=cum_events+cum_censoring+at_risk)%>% distinct()
+
+fwrite(data_long, "Month_over_month_target_Falls.csv")
+
+# -------
 # PART 2 Cox proportional model for the time to death -------------------
 
 
