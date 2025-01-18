@@ -7,7 +7,7 @@ proc import datafile="/home/u64131569/Mortality_overall.csv"
 run;
 
 proc lifetest data=mortality_data;
-    strata DC / test=logrank;
+  /*  strata DC / test=logrank; */
     time elapsed*DC(0);  /* 0 indicates censoring */
 run;
 
@@ -20,7 +20,6 @@ proc import datafile="/home/u64131569/Mortality_target_msa.csv"
 run;
 
 proc lifetest data=mortality_data;
-    strata DC / test=logrank;
     time elapsed*DC(0);  /* 0 indicates censoring */
 run;
 
@@ -34,7 +33,6 @@ proc import datafile="/home/u64131569/Speech_target_msa.csv"
 run;
 
 proc lifetest data=Speech_data;
-    strata Speech / test=logrank;
     time elapsed*Speech(0);  /* 0 indicates censoring */
 run;
 
@@ -49,7 +47,6 @@ proc import datafile="/home/u64131569/Speech_overall.csv"
 run;
 
 proc lifetest data=Speech_data;
-    strata Speech / test=logrank;
     time elapsed*Speech(0);  /* 0 indicates censoring */
 run;
 
@@ -62,7 +59,6 @@ proc import datafile="/home/u64131569/Walk_overall.csv"
 run;
 
 proc lifetest data=Walk_data;
-    strata Walk / test=logrank;
     time elapsed*Walk(0);  /* 0 indicates censoring */
 run;
 
