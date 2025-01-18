@@ -84,7 +84,6 @@ proc import datafile="/home/u64131569/Swallowing_target_msa.csv"
 run;
 
 proc lifetest data=Swallowing_data;
-    strata Swallowing / test=logrank;
     time elapsed*Swallowing(0);  /* 0 indicates censoring */
 run;
 
@@ -98,7 +97,6 @@ proc import datafile="/home/u64131569/Swallowing_overall.csv"
 run;
 
 proc lifetest data=Swallowing_data;
-    strata Swallowing / test=logrank;
     time elapsed*Swallowing(0);  /* 0 indicates censoring */
 run;
 
@@ -111,7 +109,6 @@ proc import datafile="/home/u64131569/Falls_overall.csv"
 run;
 
 proc lifetest data=Falls_data;
-    strata Falls / test=logrank;
     time elapsed*Falls(0);  /* 0 indicates censoring */
 run;
 
@@ -124,7 +121,6 @@ proc import datafile="/home/u64131569/Falls_target_msa.csv"
 run;
 
 proc lifetest data=Falls_data;
-    strata Falls / test=logrank;
     time elapsed*Falls(0);  /* 0 indicates censoring */
 run;
 
@@ -137,7 +133,6 @@ proc import datafile="/home/u64131569/Gastros_target_msa.csv"
 run;
 
 proc lifetest data=Gastros_data;
-    strata GASTRO / test=logrank;
     time elapsed*GASTRO(0);  /* 0 indicates censoring */
 run;
 
@@ -150,6 +145,5 @@ proc import datafile="/home/u64131569/Gastros_overall.csv"
 run;
 
 proc lifetest data=Gastros_data;
-    strata GASTRO / test=logrank;
     time elapsed*GASTRO(0);  /* 0 indicates censoring */
 run;
