@@ -71,7 +71,6 @@ proc import datafile="/home/u64131569/Walk_target_msa.csv"
 run;
 
 proc lifetest data=Walk_data;
-    strata Walk / test=logrank;
     time elapsed*Walk(0);  /* 0 indicates censoring */
 run;
 
