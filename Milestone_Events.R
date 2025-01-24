@@ -248,10 +248,11 @@ ggsurvplot(fit, conf.int = TRUE,
 
 
 
-
 fit <- survfit(Surv(elapsed, GASTRO) ~ 1, data = Gastros)
 print(fit)
 # 800 vs 1200
+summary(fit)
+
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
            #surv.median.line = "hv", 
@@ -275,6 +276,8 @@ ggsurvplot(fit, conf.int = TRUE,
 
 fit <- survfit(Surv(elapsed, Swallowing) ~ 1, data = Swallowing)
 print(fit)
+summary(fit)
+
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -295,6 +298,8 @@ ggsurvplot(fit, conf.int = TRUE,
 
 fit <- survfit(Surv(elapsed, Speech) ~ 1, data = Speech)
 print(fit)
+summary(fit)
+
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -314,6 +319,8 @@ ggsurvplot(fit, conf.int = TRUE,
 
 fit <- survfit(Surv(elapsed, Walk) ~ 1, data = Walk)
 print(fit)
+summary(fit)
+
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -333,6 +340,8 @@ ggsurvplot(fit, conf.int = TRUE,
 
 fit <- survfit(Surv(elapsed, Falls) ~ 1, data = Falls)
 print(fit)
+summary(fit)
+
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -377,6 +386,8 @@ fwrite(Falls[,2:3], "Falls_target_msa.csv")
 
 fit <- survfit(Surv(elapsed, DC) ~ 1, data = Mortalities)
 print(fit)
+summary(fit)
+
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -398,6 +409,8 @@ ggsurvplot(fit, conf.int = TRUE,
 
 fit <- survfit(Surv(elapsed, GASTRO) ~ 1, data = Gastros)
 print(fit)
+summary(fit)
+
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -419,6 +432,8 @@ ggsurvplot(fit, conf.int = TRUE,
 
 fit <- survfit(Surv(elapsed, Swallowing) ~ 1, data = Swallowing)
 print(fit)
+summary(fit)
+
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -438,6 +453,8 @@ ggsurvplot(fit, conf.int = TRUE,
 
 fit <- survfit(Surv(elapsed, Speech) ~ 1, data = Speech)
 print(fit)
+summary(fit)
+
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -457,6 +474,9 @@ ggsurvplot(fit, conf.int = TRUE,
 
 fit <- survfit(Surv(elapsed, Walk) ~ 1, data = Walk)
 print(fit)
+summary(fit)
+
+
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
@@ -476,6 +496,8 @@ ggsurvplot(fit, conf.int = TRUE,
 
 fit <- survfit(Surv(elapsed, Falls) ~ 1, data = Falls)
 print(fit)
+summary(fit)
+
 # 800 vs 1200
 ggsurvplot(fit, conf.int = TRUE,
            linetype = 1, 
