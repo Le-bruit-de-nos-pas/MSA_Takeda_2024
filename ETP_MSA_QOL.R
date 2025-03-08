@@ -943,7 +943,23 @@ match_results %>% group_by(matched_to, num_patient) %>%
 
 
 
-filtered <- match_results %>% group_by(matched_to, num_patient) %>%
+# filtered <- match_results %>% group_by(matched_to, num_patient) %>%
+#   summarise(DATECONSULT=min(DATECONSULT)) %>% distinct() %>%
+#   rename("first"="DATECONSULT") %>%
+#   left_join(BaselineDem) %>% 
+#   group_by(num_patient) %>% filter(DATECONSULT>=first) %>%
+#   inner_join(controls_2plus_visits) %>%
+#   left_join(
+#     dataCohorteManaged %>% select(NUM, DATECONSULT, TIME_STUDY),
+#     by=c("num_patient"="NUM", "DATECONSULT"="DATECONSULT")
+#   ) %>%
+#   group_by(matched_to, num_patient) %>%
+#     filter(TIME_STUDY == min(TIME_STUDY) | abs(TIME_STUDY - (1+min(TIME_STUDY))  ) == min(abs(TIME_STUDY - (1+min(TIME_STUDY))   ))) %>%
+#   ungroup()
+
+
+
+filtered <-  match_results %>% group_by(matched_to, num_patient) %>%
   summarise(DATECONSULT=min(DATECONSULT)) %>% distinct() %>%
   rename("first"="DATECONSULT") %>%
   left_join(BaselineDem) %>% 
@@ -954,8 +970,10 @@ filtered <- match_results %>% group_by(matched_to, num_patient) %>%
     by=c("num_patient"="NUM", "DATECONSULT"="DATECONSULT")
   ) %>%
   group_by(matched_to, num_patient) %>%
-    filter(TIME_STUDY == min(TIME_STUDY) | abs(TIME_STUDY - 1) == min(abs(TIME_STUDY - 1))) %>%
-  ungroup()
+   arrange(matched_to, num_patient) %>% mutate(lag=TIME_STUDY-lag(TIME_STUDY)) %>%
+   mutate(lag=ifelse(is.na(lag), 0, lag)) %>%
+     filter(lag == min(lag) | abs(lag - 1) == min(abs(lag - 1))) %>%
+     ungroup()
 
 
 
@@ -966,6 +984,13 @@ filtered <- filtered %>% ungroup() %>% group_by(matched_to , num_patient) %>%
   group_by(matched_to , num_patient) %>%
   mutate(visite=row_number()) %>%
   filter(visite==1|visite==2)
+
+
+filtered %>% group_by(matched_to , num_patient) %>%
+  arrange(matched_to, num_patient) %>% mutate(lag=TIME_STUDY-lag(TIME_STUDY)) %>%
+  ungroup() %>%
+  filter(!is.na(TIME_STUDY)) %>% summarise(mean=mean(TIME_STUDY))
+
 
 
 
@@ -1009,9 +1034,9 @@ filtered %>% select(matched_to, num_patient, UMSARS_tot,visite  ) %>%
             q25=quantile(delta, 0.25),
             q75=quantile(delta, 0.75))
 
-#   mean    se median   q25   q75
+#  mean    se median   q25   q75
 #   <dbl> <dbl>  <dbl> <dbl> <dbl>
-# 1  8.79  9.13     11     4    14
+# 1  13.2  11.3     12  5.25    21
 
 
 
@@ -1038,10 +1063,10 @@ merged_data <- tep_table %>%
 wilcox.test(merged_data$delta, merged_data$mean_delta_control, paired = TRUE, 
             alternative = "two.sided")
 
-# 	Wilcoxon signed rank exact test
+# Wilcoxon signed rank exact test
 # 
 # data:  merged_data$delta and merged_data$mean_delta_control
-# V = 31, p-value = 0.7695
+# V = 25, p-value = 0.5195
 # alternative hypothesis: true location shift is not equal to 0
 
 
